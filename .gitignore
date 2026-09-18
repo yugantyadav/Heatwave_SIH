@@ -6,15 +6,9 @@ __pycache__/
 *.pyd
 .env
 .env.local
-.env.*.local
+env/
 
-# Django
-*.db.sqlite3
-
-# Postgres
-postgres/
-
-# Frontend
+# Node
 node_modules/
 /dist
 /.vite
@@ -22,6 +16,12 @@ node_modules/
 # IDE
 .vscode/
 .idea/
+
+# Django
+*.db.sqlite3
+
+# Postgres
+postgres/
 
 # Docker
 .dockerinit
