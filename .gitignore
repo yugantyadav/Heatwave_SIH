@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+.env.*.local
+
+# Django
+*.db.sqlite3
+
+# Postgres
+postgres/
+
+# Frontend
+node_modules/
+/dist
+/.vite
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+.dockerinit
+
+# Environment
+.env*
