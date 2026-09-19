@@ -203,6 +203,59 @@ python seed_wards.py
 python ingest_weather.py
 ```
 
+## Railway Deployment
+
+Deploy the full stack on Railway (free tier, $5/month credit).
+
+### Steps
+
+```bash
+# 1. Install Railway CLI
+npm install -g @railway/cli
+
+# 2. Login
+railway login
+
+# 3. Init project
+railway init
+
+# 4. Add services
+railway add postgresql
+railway add redis
+
+# 5. Set environment variables
+railway variables set DATABASE_URL="postgresql+asyncpg://postgres:postgres@postgresql:5432/heatwave"
+railway variables set REDIS_URL="redis://redis:6379/0"
+railway variables set ENVIRONMENT="production"
+
+# 6. Deploy
+railway up --build
+
+# 7. Deploy worker and beat
+railway up --build --service worker
+railway up --build --service beat
+```
+
+### Railway Configuration
+- **`railway.toml`**: Service definitions for postgresql and redis
+- **`Procfile`**: Process types (web, worker, beat)
+- **`Dockerfile`**: Backend Docker image
+- **`docker-compose.yml`**: Local development with all services
+- **`Dockerfile`** (frontend): React frontend image
+
+### Local Development with Docker Compose
+```bash
+docker-compose up --build
+```
+
+### Environment Variables Required
+- `DATABASE_URL`: PostgreSQL + asyncpg connection string
+- `REDIS_URL`: Redis connection string for Celery broker
+- `ENVIRONMENT`: development/production
+- `FORECAST_REFRESH_HOURS`: How often to refresh forecasts (default: 6)
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+- `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_ACCESS_TOKEN`
+
 ## References
 
 1. Gasparrini, A., Guo, Y., Hashizume, M., et al. (2015). "Mortality risk attributable to high and low ambient temperature: a multicountry observational study." The Lancet, 386(9991), 369-375. DOI: 10.1016/S0140-6736(14)62114-0
