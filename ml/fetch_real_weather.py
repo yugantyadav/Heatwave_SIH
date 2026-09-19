@@ -170,3 +170,12 @@ def download_weather():
 if __name__ == "__main__":
 
     download_weather()
+
+# ============================================================
+# LOAD REAL MUMBAI WEATHER DATA
+# ============================================================
+
+def load_weather_data():
+    file_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'mumbai_weather_real.csv')
+    df = pd.read_csv(file_path)
+    return df

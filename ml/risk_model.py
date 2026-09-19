@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import joblib
 
@@ -9,7 +10,7 @@ from thermal_engine import calculate_thermal_indices
 # ============================================================
 
 saved_model = joblib.load(
-    "models/isolation_forest.joblib"
+    os.path.join(os.path.dirname(__file__), "models", "isolation_forest.joblib")
 )
 
 ml_model = saved_model["model"]
