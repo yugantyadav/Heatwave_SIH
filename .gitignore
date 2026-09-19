@@ -6,7 +6,7 @@ __pycache__/
 *.pyd
 .env
 .env.local
-env/
+.env.*
 
 # Node
 node_modules/
@@ -26,5 +26,21 @@ postgres/
 # Docker
 .dockerinit
 
-# Environment
-.env*
+# Railway
+railway.toml
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
