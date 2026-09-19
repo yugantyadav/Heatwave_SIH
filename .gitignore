@@ -3,13 +3,28 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
-
-# Environment
+*.pyd
 .env
+.env.local
+env/
+
+# Node
+node_modules/
+/dist
+/.vite
 
 # IDE
 .vscode/
 .idea/
 
-# OS
-.DS_Store
+# Django
+*.db.sqlite3
+
+# Postgres
+postgres/
+
+# Docker
+.dockerinit
+
+# Environment
+.env*
