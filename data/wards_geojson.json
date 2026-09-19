@@ -1,0 +1,185 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ward_id": 1,
+        "ward_name": "Ward 1",
+        "zone": "South Mumbai",
+        "district": "Mumbai City"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.84,
+              19.065
+            ],
+            [
+              72.85,
+              19.065
+            ],
+            [
+              72.85,
+              19.075
+            ],
+            [
+              72.84,
+              19.075
+            ],
+            [
+              72.84,
+              19.065
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ward_id": 2,
+        "ward_name": "Ward 2",
+        "zone": "South Mumbai",
+        "district": "Mumbai City"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.85,
+              19.065
+            ],
+            [
+              72.86,
+              19.065
+            ],
+            [
+              72.86,
+              19.075
+            ],
+            [
+              72.85,
+              19.075
+            ],
+            [
+              72.85,
+              19.065
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ward_id": 3,
+        "ward_name": "Ward 3",
+        "zone": "South Mumbai",
+        "district": "Mumbai City"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.86,
+              19.065
+            ],
+            [
+              72.87,
+              19.065
+            ],
+            [
+              72.87,
+              19.075
+            ],
+            [
+              72.86,
+              19.075
+            ],
+            [
+              72.86,
+              19.065
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ward_id": 4,
+        "ward_name": "Ward 4",
+        "zone": "Island",
+        "district": "Mumbai City"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.84,
+              19.075
+            ],
+            [
+              72.85,
+              19.075
+            ],
+            [
+              72.85,
+              19.085
+            ],
+            [
+              72.84,
+              19.085
+            ],
+            [
+              72.84,
+              19.075
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ward_id": 5,
+        "ward_name": "Ward 5",
+        "zone": "Island",
+        "district": "Mumbai City"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.85,
+              19.075
+            ],
+            [
+              72.86,
+              19.075
+            ],
+            [
+              72.86,
+              19.085
+            ],
+            [
+              72.85,
+              19.085
+            ],
+            [
+              72.85,
+              19.075
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
