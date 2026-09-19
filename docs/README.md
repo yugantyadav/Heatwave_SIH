@@ -147,11 +147,20 @@ Project documentation for the Heatwave Early Warning System hackathon submission
 - **Real/Modeled**: REAL (demographics) — MODELED (age-specific breakdown by ward)
 
 ### Thermal Stress Indices (HI + WBGT)
-- **Source**: pythermalcomfort library (Tartarini & Schiavon 2020)
-- **Heat Index**: Rothfusz (1990) NWS regression equation — validated against NWS reference tables
-- **WBGT**: Liljegren et al. (2008) model
-- **Inputs**: Open-Meteo hourly temperature + relative humidity
+- **Source**: pythermalcomfort library (v3.8.0)
+- **Heat Index**: Lu & Romps (2022) — preferred over Rothfusz for extreme conditions
+- **Wet Bulb Temperature**: wet_bulb_tmp from pythermalcomfort
+- **WBGT**: Liljegren et al. (2008) with solar load via pythermalcomfort
+- **Inputs**: Open-Meteo hourly temperature + relative humidity + wind speed + solar radiation
 - **Real/Modeled**: REAL (equations and inputs) — MODELED (ward-level point estimates, not spatially interpolated)
+- **Status**: ✅ Working in `ml/thermal_engine.py`
+
+### ML Anomaly Detection
+- **Model**: Isolation Forest (scikit-learn, pre-trained)
+- **Training Data**: `data/mumbai_weather_real.csv` (17,545 real Mumbai weather records, 2024)
+- **Features**: Temperature, humidity, wind_speed, solar_radiation
+- **Purpose**: Detect unusual weather patterns beyond thermal indices
+- **Status**: ✅ Pre-trained model at `ml/models/isolation_forest.joblib`
 
 ### Risk Scoring Formula
 - **Source**: Ahmedabad Heat Action Plan (2013) + Gasparrini et al. (2015 Lancet)
@@ -169,7 +178,7 @@ Project documentation for the Heatwave Early Warning System hackathon submission
 
 | Role | Focus | Key Deliverable |
 |------|-------|-----------------|
-| R1 | Thermal Stress Engine | HI + WBGT calculations via pythermalcomfort |
+| R1 | Thermal Stress Engine | HI/WBGT via pythermalcomfort v3.8.0 (Lu & Romps 2022), Isolation Forest anomaly detection |
 | R2 | Mortality Risk Model | Epidemiological risk scoring using Gasparrini/Ahmedabad HAP coefficients |
 | R3 | Backend Engineer | FastAPI, PostGIS schema, Celery scheduled jobs |
 | R4 | Frontend Engineer | React/Leaflet dashboard |
@@ -270,17 +279,20 @@ docker-compose up --build
 
 6. Liljegren, J.I., et al. (2008). "A heat stress index for environmental monitoring." International Journal of Biometeorology, 53(3), 275-285.
 
-7. Natural Resources Defense Council (NRDC). "Ahmedabad Heat Action Plan: Guide to Extreme Heat Planning in Ahmedabad, India." 2013. Available at: https://www.nrdc.org/sites/default/files/ahmedabad-heat-action-plan-2016.pdf
+7. Lu, Z., & Romps, D.M. (2022). "Heat Index: A Better Calculation." (Lu & Romps formulation used in pythermalcomfort)
 
-8. Census of India 2011. "Mumbai - Ward wise Census Data." Office of the Registrar General & Census Commissioner, India. Available at: https://data.opencity.in/dataset/mumbai-ward-wise-census-data
+8. Natural Resources Defense Council (NRDC). "Ahmedabad Heat Action Plan: Guide to Extreme Heat Planning in Ahmedabad, India." 2013. Available at: https://www.nrdc.org/sites/default/files/ahmedabad-heat-action-plan-2016.pdf
 
-9. Open-Meteo API. "Weather Forecast API." https://open-meteo.com/api
+9. Census of India 2011. "Mumbai - Ward wise Census Data." Office of the Registrar General & Census Commissioner, India. Available at: https://data.opencity.in/dataset/mumbai-ward-wise-census-data
+
+10. Open-Meteo API. "Weather Forecast API." https://open-meteo.com/api
 
 ## Data Sources — Complete URL List
 
 | Data | Source | URL | Status |
 |------|--------|-----|--------|
 | Weather forecast | Open-Meteo API | https://open-meteo.com/api | ✅ Verified |
+| Historical weather | Open-Meteo Archive API | https://archive-api.open-meteo.com | ✅ 17,545 records downloaded |
 | Ward boundaries | OpenStreetMap Overpass | https://overpass-api.de/api/interpreter | ⚠️ 406 error — use MCGM |
 | Ward census data | data.opencity.in | https://data.opencity.in/dataset/mumbai-ward-wise-census-data | ✅ Available |
 | Elderly population | Census India | https://censusindia.gov.in | ✅ Available |
@@ -289,3 +301,5 @@ docker-compose up --build
 | Heat vulnerability studies | PMC/NCBI | https://pmc.ncbi.nlm.nih.gov/articles/PMC4024996 | ✅ Published |
 | Mumbai city data | census2011.co.in | https://www.census2011.co.in/census/district/357-mumbai-city.html | ✅ Available |
 | MCGM open data | MCGM official | https://portal.mcgm.gov.in | ⚠️ To verify |
+| Isolation Forest model | Trained locally | ml/models/isolation_forest.joblib | ✅ 2.8MB pre-trained |
+| Real weather dataset | Open-Meteo Archive | data/mumbai_weather_real.csv | ✅ 17,545 records |
