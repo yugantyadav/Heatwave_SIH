@@ -19,12 +19,11 @@
  *   GET  /api/alerts/                        -> alert log
  *
  * Set VITE_USE_MOCK_DATA=false (see frontend/.env) to use the live backend.
- * Mock mode falls back to src/data/mumbaiWardsReal.js (97 wards generated
- * from data/mumbai_ward_census.csv) so the map works with zero backend.
+ * Mock mode falls back to src/data/mumbaiWardsSample.js (8 area-specific
+ * Mumbai wards at their real centers) so the map works with zero backend.
  */
 
 import { mumbaiWardsSample } from "../data/mumbaiWardsSample";
-import { mumbaiWardsReal } from "../data/mumbaiWardsReal";
 import { defaultThresholds, defaultAdvisoryTemplates } from "../data/adminDefaults";
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== "false";
@@ -68,7 +67,7 @@ export function normalizeRiskCategory(value) {
 export async function fetchWards() {
   if (USE_MOCK_DATA) {
     await fakeDelay();
-    return mumbaiWardsReal ?? mumbaiWardsSample;
+    return mumbaiWardsSample;
   }
   const fc = await fetchJson(`${API_BASE_URL}/api/wards/geojson`);
   // Normalize backend riskCategory to Title case for the map.
@@ -88,7 +87,7 @@ export async function fetchWards() {
 export async function fetchWard(wardCode) {
   if (USE_MOCK_DATA) {
     await fakeDelay();
-    const col = mumbaiWardsReal ?? mumbaiWardsSample;
+    const col = mumbaiWardsSample;
     const ward = col.features.find(
       (f) => String(f.properties.id) === String(wardCode) || String(f.properties.ward_code) === String(wardCode),
     );
@@ -120,7 +119,7 @@ export async function fetchWardRisk(wardId) {
 async function fetchWardRiskUncached(wardId) {
   if (USE_MOCK_DATA) {
     await fakeDelay();
-    const col = mumbaiWardsReal ?? mumbaiWardsSample;
+    const col = mumbaiWardsSample;
     const ward = col.features.find((f) => String(f.properties.id) === String(wardId));
     if (!ward) throw new Error(`Unknown ward id: ${wardId}`);
 
@@ -160,7 +159,7 @@ async function fetchWardRiskUncached(wardId) {
 export async function fetchWardForecast(wardId) {
   if (USE_MOCK_DATA) {
     await fakeDelay();
-    const col = mumbaiWardsReal ?? mumbaiWardsSample;
+    const col = mumbaiWardsSample;
     const base = col.features.find((f) => String(f.properties.id) === String(wardId));
     const startHeatIndex = { Low: 34, Moderate: 40, High: 45, Severe: 49 }[base?.properties.riskCategory] ?? 40;
 

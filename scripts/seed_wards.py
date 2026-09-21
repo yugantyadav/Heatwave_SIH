@@ -1,14 +1,19 @@
-"""Seed wards from data/mumbai_ward_census.csv into PostgreSQL.
+"""Seed wards into PostgreSQL.
 
-Reads the full Census CSV (97 Greater Mumbai wards) and upserts into the
-``wards`` table. Safe to re-run: existing ward_codes are updated, missing
-ones are inserted.
+1. Upserts the full Census CSV (97 Greater Mumbai census wards) — the
+   demographic backbone (populations, SC/ST counts).
+2. Upserts the 8 area-specific map wards from data/wards_geojson.json
+   (Colaba, Dadar, Bandra West, Andheri West, Malad, Borivali, Kurla,
+   Chembur at their real centers) — the dashboard's map layer.
+
+Safe to re-run: existing ward_codes are updated, missing ones inserted.
 
 Usage:
     python scripts/seed_wards.py
 """
 import asyncio
 import csv
+import json
 import os
 import sys
 
@@ -22,6 +27,7 @@ from app.models import Ward
 from app.core.config import settings
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "mumbai_ward_census.csv")
+AREAS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "wards_geojson.json")
 
 
 def parse_row(row):
@@ -53,8 +59,9 @@ async def seed_wards():
 
     async with AsyncSession(engine) as session:
         inserted, updated = 0, 0
-        for row in rows:
-            data = parse_row(row)
+
+        async def upsert(data):
+            nonlocal inserted, updated
             result = await session.execute(
                 select(Ward).where(Ward.ward_code == data["ward_code"])
             )
@@ -66,10 +73,33 @@ async def seed_wards():
             else:
                 session.add(Ward(**data))
                 inserted += 1
+
+        for row in rows:
+            await upsert(parse_row(row))
+        census_n = len(rows)
+
+        # Area-specific map wards (same codes the dashboard queries).
+        with open(AREAS_PATH) as f:
+            areas = json.load(f)["features"]
+        for feat in areas:
+            p = feat["properties"]
+            await upsert({
+                "ward_code": str(p["ward_code"]),
+                "ward_name": p["ward_name"],
+                "zone": p.get("zone"),
+                "district": p.get("district"),
+                "total_population": int(p.get("total_population") or 0),
+                "total_males": 0,
+                "total_females": 0,
+                "sc_population": 0,
+                "st_population": 0,
+                "elderly_percent": float(p.get("elderly_percent") or 8.57),
+                "outdoor_worker_density": 0.5,
+            })
         await session.commit()
 
     await engine.dispose()
-    print(f"Census rows: {len(rows)} | inserted: {inserted} | updated: {updated}")
+    print(f"Census rows: {census_n} | areas: {len(areas)} | inserted: {inserted} | updated: {updated}")
 
 
 if __name__ == "__main__":

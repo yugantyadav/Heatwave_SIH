@@ -42,6 +42,12 @@ async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
 
     features = []
     for ward in wards:
+        # Only wards with a mapped polygon are part of the map layer
+        # (the 8 area-specific wards from data/wards_geojson.json).
+        # Census-only wards stay in the DB for demographics but are not drawn.
+        geometry = geom_by_code.get(str(ward.ward_code))
+        if geometry is None:
+            continue
         features.append({
             "type": "Feature",
             "properties": {
@@ -56,7 +62,7 @@ async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
                 "elderly_percent": ward.elderly_percent,
                 "riskCategory": (latest_by_ward.get(ward.ward_code) or "MODERATE"),
             },
-            "geometry": geom_by_code.get(str(ward.ward_code)),
+            "geometry": geometry,
         })
     return WardGeoJSONResponse(type="FeatureCollection", features=features)
 
