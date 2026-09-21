@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 from app.db.session import get_db
 from app.models import Ward, RiskScore, WeatherReading, Alert, ThresholdConfig, AdvisoryTemplate
-from app.schemas import WardResponse, WardGeoJSONResponse, RiskScoreResponse, RiskMapResponse, WeatherReadingResponse, WeatherForecastResponse, AlertTriggerRequest, AlertResponse, AlertLogResponse, ThresholdConfigResponse, AdvisoryTemplateResponse, HealthResponse
+from app.schemas import WardResponse, WardListResponse, WardGeoJSONResponse, RiskScoreResponse, RiskMapResponse, WeatherReadingResponse, WeatherForecastResponse, AlertTriggerRequest, AlertResponse, AlertLogResponse, ThresholdConfigResponse, AdvisoryTemplateResponse, HealthResponse
 from typing import List, Optional, Dict, Any
 
 router = APIRouter()
@@ -12,7 +12,7 @@ router = APIRouter()
 async def get_wards(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Ward).order_by(Ward.ward_code))
     wards = result.scalars().all()
-    return WardResponse(wards=wards)
+    return WardListResponse(wards=wards)
 
 @router.get("/geojson", response_model=WardGeoJSONResponse)
 async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
@@ -40,7 +40,7 @@ async def get_ward(ward_code: str, db: AsyncSession = Depends(get_db)):
     ward = result.scalar_one_or_none()
     if not ward:
         raise HTTPException(status_code=404, detail="Ward not found")
-    return ward
+    return WardResponse.model_validate(ward)
 
 @router.get("/risk/wards", response_model=RiskMapResponse)
 async def get_ward_risks(db: AsyncSession = Depends(get_db)):

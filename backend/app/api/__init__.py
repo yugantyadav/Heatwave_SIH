@@ -5,9 +5,9 @@ from app.api.weather_router import router as weather_router
 from app.api.alerts_router import router as alerts_router
 from app.api.config_router import router as config_router
 
-app = APIRouter()
-app.include_router(wards_router)
-app.include_router(risk_router)
-app.include_router(weather_router)
-app.include_router(alerts_router)
-app.include_router(config_router)
+router = APIRouter()
+router.include_router(wards_router)
+router.include_router(risk_router)
+router.include_router(weather_router)
+router.include_router(alerts_router)
+router.include_router(config_router)

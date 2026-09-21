@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 # Ward Schemas
 class WardBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     ward_name: str
     zone: Optional[str] = None
@@ -19,6 +20,7 @@ class WardResponse(WardBase):
     geometry: Optional[Dict[str, Any]] = None
 
 class WardListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     wards: List[WardResponse]
 
 class WardGeoJSONResponse(BaseModel):
@@ -27,6 +29,7 @@ class WardGeoJSONResponse(BaseModel):
 
 # Risk Schemas
 class RiskScoreBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     risk_category: str
     final_score: float
@@ -42,10 +45,12 @@ class RiskScoreResponse(RiskScoreBase):
     created_at: Optional[datetime] = None
 
 class RiskMapResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     wards: List[RiskScoreResponse]
 
 # Weather Schemas
 class WeatherReadingBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     temperature_2m: Optional[float] = None
     relative_humidity_2m: Optional[float] = None
@@ -59,12 +64,14 @@ class WeatherReadingResponse(WeatherReadingBase):
     recorded_at: Optional[datetime] = None
 
 class WeatherForecastResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     current: Optional[WeatherReadingResponse] = None
     forecast: List[Dict[str, Any]] = []
 
 # Alert Schemas
 class AlertBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     alert_channel: str
     message: str
@@ -77,16 +84,19 @@ class AlertResponse(AlertBase):
     sent_at: Optional[datetime] = None
 
 class AlertTriggerRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     ward_code: str
     risk_category: str
     message: str
     channel: str
 
 class AlertLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     alerts: List[AlertResponse]
 
 # Config Schemas
 class ThresholdConfigBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     config_type: str
     low_threshold: float
     moderate_threshold: float
@@ -98,6 +108,7 @@ class ThresholdConfigResponse(ThresholdConfigBase):
     updated_at: Optional[datetime] = None
 
 class AdvisoryTemplateBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     risk_category: str
     sms_text: str
     whatsapp_text: str
@@ -106,5 +117,6 @@ class AdvisoryTemplateResponse(AdvisoryTemplateBase):
     id: int
 
 class HealthResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     status: str
     service: str
