@@ -20,10 +20,9 @@ async def get_current(ward_code: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/wards/{ward_code}/forecast", response_model=WeatherForecastResponse)
 async def get_forecast(ward_code: str, db: AsyncSession = Depends(get_db)):
-    import json
     import os
 
-    from app.services.thermal_index import ThermalIndexService
+    from app.services.weather import daily_heat_index_forecast
 
     result = await db.execute(
         select(WeatherReading).where(WeatherReading.ward_code == ward_code).order_by(desc(WeatherReading.recorded_at))
@@ -33,22 +32,10 @@ async def get_forecast(ward_code: str, db: AsyncSession = Depends(get_db)):
 
     forecast = []
     try:
+        from app.services.weather import daily_heat_index_forecast
+
         fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
-        with open(fc_path) as f:
-            fc = json.load(f)
-        daily = fc.get("daily", {})
-        times = daily.get("time", [])
-        tmax = daily.get("temperature_2m_max", [])
-        rh = (current.relative_humidity_2m if current and current.relative_humidity_2m else 80.0)
-        for i, d in enumerate(times):
-            t = float(tmax[i])
-            th = ThermalIndexService.calculate(t, rh)
-            forecast.append({
-                "date": d,
-                "tmax": t,
-                "heat_index": th.get("heat_index"),
-                "wbgt": th.get("wbgt"),
-            })
+        forecast = daily_heat_index_forecast(fc_path)
     except Exception:
         forecast = []
     return WeatherForecastResponse(

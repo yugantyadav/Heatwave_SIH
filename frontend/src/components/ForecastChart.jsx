@@ -103,7 +103,7 @@ export default function ForecastChart({ selectedWard }) {
                 tick={{ fontSize: 12 }}
                 stroke="var(--color-text-muted)"
                 unit="°C"
-                width={48}
+                width={60}
               />
               <Tooltip
                 formatter={(value) => [`${value}°C`, "Heat Index"]}
