@@ -1,16 +1,22 @@
-{
+/**
+ * mumbaiWardsReal.js — GENERATED from data/mumbai_ward_census.csv
+ * + data/wards_geojson.json (97 Greater Mumbai wards).
+ * riskCategory here is a mock-fallback quartile heuristic used ONLY
+ * when VITE_USE_MOCK_DATA=true. Live mode merges backend risk instead.
+ */
+export const mumbaiWardsReal = {
   "type": "FeatureCollection",
   "features": [
     {
       "type": "Feature",
       "properties": {
+        "id": "1043",
+        "name": "Ward 1043 (H/E)",
+        "zone": "H/E",
         "ward_code": "1043",
-        "ward_id": 1,
-        "ward_name": "Ward 1043 (H/E)",
-        "zone": "H/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 99427
+        "total_population": 99427,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -43,13 +49,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1045",
+        "name": "Ward 1045 (H/E)",
+        "zone": "H/E",
         "ward_code": "1045",
-        "ward_id": 2,
-        "ward_name": "Ward 1045 (H/E)",
-        "zone": "H/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 185572
+        "total_population": 185572,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -82,13 +88,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1048",
+        "name": "Ward 1048 (H/E)",
+        "zone": "H/E",
         "ward_code": "1048",
-        "ward_id": 3,
-        "ward_name": "Ward 1048 (H/E)",
-        "zone": "H/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 272240
+        "total_population": 272240,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -121,13 +127,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1139",
+        "name": "Ward 1139 (H/W)",
+        "zone": "H/W",
         "ward_code": "1139",
-        "ward_id": 4,
-        "ward_name": "Ward 1139 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 47123
+        "total_population": 47123,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -160,13 +166,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1140",
+        "name": "Ward 1140 (H/W)",
+        "zone": "H/W",
         "ward_code": "1140",
-        "ward_id": 5,
-        "ward_name": "Ward 1140 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 36739
+        "total_population": 36739,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -199,13 +205,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1141",
+        "name": "Ward 1141 (H/W)",
+        "zone": "H/W",
         "ward_code": "1141",
-        "ward_id": 6,
-        "ward_name": "Ward 1141 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 48710
+        "total_population": 48710,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -238,13 +244,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1142",
+        "name": "Ward 1142 (H/W)",
+        "zone": "H/W",
         "ward_code": "1142",
-        "ward_id": 7,
-        "ward_name": "Ward 1142 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 59337
+        "total_population": 59337,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -277,13 +283,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1143",
+        "name": "Ward 1143 (H/W)",
+        "zone": "H/W",
         "ward_code": "1143",
-        "ward_id": 8,
-        "ward_name": "Ward 1143 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 29539
+        "total_population": 29539,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -316,13 +322,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1144",
+        "name": "Ward 1144 (H/W)",
+        "zone": "H/W",
         "ward_code": "1144",
-        "ward_id": 9,
-        "ward_name": "Ward 1144 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 18855
+        "total_population": 18855,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -355,13 +361,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1145",
+        "name": "Ward 1145 (H/W)",
+        "zone": "H/W",
         "ward_code": "1145",
-        "ward_id": 10,
-        "ward_name": "Ward 1145 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 12322
+        "total_population": 12322,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -394,13 +400,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1146",
+        "name": "Ward 1146 (H/W)",
+        "zone": "H/W",
         "ward_code": "1146",
-        "ward_id": 11,
-        "ward_name": "Ward 1146 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 26671
+        "total_population": 26671,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -433,13 +439,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1147",
+        "name": "Ward 1147 (H/W)",
+        "zone": "H/W",
         "ward_code": "1147",
-        "ward_id": 12,
-        "ward_name": "Ward 1147 (H/W)",
-        "zone": "H/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 28285
+        "total_population": 28285,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -472,13 +478,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1249",
+        "name": "Ward 1249 (K/E)",
+        "zone": "K/E",
         "ward_code": "1249",
-        "ward_id": 13,
-        "ward_name": "Ward 1249 (K/E)",
-        "zone": "K/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 164831
+        "total_population": 164831,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -511,13 +517,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1255",
+        "name": "Ward 1255 (K/E)",
+        "zone": "K/E",
         "ward_code": "1255",
-        "ward_id": 14,
-        "ward_name": "Ward 1255 (K/E)",
-        "zone": "K/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 393391
+        "total_population": 393391,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -550,13 +556,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1256",
+        "name": "Ward 1256 (K/E)",
+        "zone": "K/E",
         "ward_code": "1256",
-        "ward_id": 15,
-        "ward_name": "Ward 1256 (K/E)",
-        "zone": "K/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 265663
+        "total_population": 265663,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -589,13 +595,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1350",
+        "name": "Ward 1350 (K/W)",
+        "zone": "K/W",
         "ward_code": "1350",
-        "ward_id": 16,
-        "ward_name": "Ward 1350 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 57426
+        "total_population": 57426,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -628,13 +634,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1351",
+        "name": "Ward 1351 (K/W)",
+        "zone": "K/W",
         "ward_code": "1351",
-        "ward_id": 17,
-        "ward_name": "Ward 1351 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 99002
+        "total_population": 99002,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -667,13 +673,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1352",
+        "name": "Ward 1352 (K/W)",
+        "zone": "K/W",
         "ward_code": "1352",
-        "ward_id": 18,
-        "ward_name": "Ward 1352 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 312567
+        "total_population": 312567,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -706,13 +712,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1353",
+        "name": "Ward 1353 (K/W)",
+        "zone": "K/W",
         "ward_code": "1353",
-        "ward_id": 19,
-        "ward_name": "Ward 1353 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 92709
+        "total_population": 92709,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -745,13 +751,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1354",
+        "name": "Ward 1354 (K/W)",
+        "zone": "K/W",
         "ward_code": "1354",
-        "ward_id": 20,
-        "ward_name": "Ward 1354 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 9182
+        "total_population": 9182,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -784,13 +790,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1357",
+        "name": "Ward 1357 (K/W)",
+        "zone": "K/W",
         "ward_code": "1357",
-        "ward_id": 21,
-        "ward_name": "Ward 1357 (K/W)",
-        "zone": "K/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 177802
+        "total_population": 177802,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -823,13 +829,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1458",
+        "name": "Ward 1458 (P/S)",
+        "zone": "P/S",
         "ward_code": "1458",
-        "ward_id": 22,
-        "ward_name": "Ward 1458 (P/S)",
-        "zone": "P/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 23689
+        "total_population": 23689,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -862,13 +868,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1459",
+        "name": "Ward 1459 (P/S)",
+        "zone": "P/S",
         "ward_code": "1459",
-        "ward_id": 23,
-        "ward_name": "Ward 1459 (P/S)",
-        "zone": "P/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 99684
+        "total_population": 99684,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -901,13 +907,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1460",
+        "name": "Ward 1460 (P/S)",
+        "zone": "P/S",
         "ward_code": "1460",
-        "ward_id": 24,
-        "ward_name": "Ward 1460 (P/S)",
-        "zone": "P/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 338465
+        "total_population": 338465,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -940,13 +946,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1463",
+        "name": "Ward 1463 (P/S)",
+        "zone": "P/S",
         "ward_code": "1463",
-        "ward_id": 25,
-        "ward_name": "Ward 1463 (P/S)",
-        "zone": "P/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 1669
+        "total_population": 1669,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -979,13 +985,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1561",
+        "name": "Ward 1561 (P/N)",
+        "zone": "P/N",
         "ward_code": "1561",
-        "ward_id": 26,
-        "ward_name": "Ward 1561 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 10121
+        "total_population": 10121,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -1018,13 +1024,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1562",
+        "name": "Ward 1562 (P/N)",
+        "zone": "P/N",
         "ward_code": "1562",
-        "ward_id": 27,
-        "ward_name": "Ward 1562 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 168576
+        "total_population": 168576,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1057,13 +1063,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1563",
+        "name": "Ward 1563 (P/N)",
+        "zone": "P/N",
         "ward_code": "1563",
-        "ward_id": 28,
-        "ward_name": "Ward 1563 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 120217
+        "total_population": 120217,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1096,13 +1102,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1564",
+        "name": "Ward 1564 (P/N)",
+        "zone": "P/N",
         "ward_code": "1564",
-        "ward_id": 29,
-        "ward_name": "Ward 1564 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 391381
+        "total_population": 391381,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1135,13 +1141,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1565",
+        "name": "Ward 1565 (P/N)",
+        "zone": "P/N",
         "ward_code": "1565",
-        "ward_id": 30,
-        "ward_name": "Ward 1565 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 247521
+        "total_population": 247521,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1174,13 +1180,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1566",
+        "name": "Ward 1566 (P/N)",
+        "zone": "P/N",
         "ward_code": "1566",
-        "ward_id": 31,
-        "ward_name": "Ward 1566 (P/N)",
-        "zone": "P/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 3550
+        "total_population": 3550,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -1213,13 +1219,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1667",
+        "name": "Ward 1667 (R/S)",
+        "zone": "R/S",
         "ward_code": "1667",
-        "ward_id": 32,
-        "ward_name": "Ward 1667 (R/S)",
-        "zone": "R/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 348033
+        "total_population": 348033,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1252,13 +1258,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1668",
+        "name": "Ward 1668 (R/S)",
+        "zone": "R/S",
         "ward_code": "1668",
-        "ward_id": 33,
-        "ward_name": "Ward 1668 (R/S)",
-        "zone": "R/S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 343196
+        "total_population": 343196,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1291,13 +1297,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1769",
+        "name": "Ward 1769 (R/C)",
+        "zone": "R/C",
         "ward_code": "1769",
-        "ward_id": 34,
-        "ward_name": "Ward 1769 (R/C)",
-        "zone": "R/C",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 306941
+        "total_population": 306941,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1330,13 +1336,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1770",
+        "name": "Ward 1770 (R/C)",
+        "zone": "R/C",
         "ward_code": "1770",
-        "ward_id": 35,
-        "ward_name": "Ward 1770 (R/C)",
-        "zone": "R/C",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 56789
+        "total_population": 56789,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -1369,13 +1375,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1771",
+        "name": "Ward 1771 (R/C)",
+        "zone": "R/C",
         "ward_code": "1771",
-        "ward_id": 36,
-        "ward_name": "Ward 1771 (R/C)",
-        "zone": "R/C",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 6060
+        "total_population": 6060,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -1408,13 +1414,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1772",
+        "name": "Ward 1772 (R/C)",
+        "zone": "R/C",
         "ward_code": "1772",
-        "ward_id": 37,
-        "ward_name": "Ward 1772 (R/C)",
-        "zone": "R/C",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 91245
+        "total_population": 91245,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1447,13 +1453,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1773",
+        "name": "Ward 1773 (R/C)",
+        "zone": "R/C",
         "ward_code": "1773",
-        "ward_id": 38,
-        "ward_name": "Ward 1773 (R/C)",
-        "zone": "R/C",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 101127
+        "total_population": 101127,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1486,13 +1492,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1870",
+        "name": "Ward 1870 (R/N)",
+        "zone": "R/N",
         "ward_code": "1870",
-        "ward_id": 39,
-        "ward_name": "Ward 1870 (R/N)",
-        "zone": "R/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 122270
+        "total_population": 122270,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1525,13 +1531,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1873",
+        "name": "Ward 1873 (R/N)",
+        "zone": "R/N",
         "ward_code": "1873",
-        "ward_id": 40,
-        "ward_name": "Ward 1873 (R/N)",
-        "zone": "R/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 154558
+        "total_population": 154558,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1564,13 +1570,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1874",
+        "name": "Ward 1874 (R/N)",
+        "zone": "R/N",
         "ward_code": "1874",
-        "ward_id": 41,
-        "ward_name": "Ward 1874 (R/N)",
-        "zone": "R/N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 154540
+        "total_population": 154540,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1603,13 +1609,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1975",
+        "name": "Ward 1975 (L)",
+        "zone": "L",
         "ward_code": "1975",
-        "ward_id": 42,
-        "ward_name": "Ward 1975 (L)",
-        "zone": "L",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 139548
+        "total_population": 139548,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1642,13 +1648,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1976",
+        "name": "Ward 1976 (L)",
+        "zone": "L",
         "ward_code": "1976",
-        "ward_id": 43,
-        "ward_name": "Ward 1976 (L)",
-        "zone": "L",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 19086
+        "total_population": 19086,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -1681,13 +1687,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1977",
+        "name": "Ward 1977 (L)",
+        "zone": "L",
         "ward_code": "1977",
-        "ward_id": 44,
-        "ward_name": "Ward 1977 (L)",
-        "zone": "L",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 156954
+        "total_population": 156954,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -1720,13 +1726,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "1978",
+        "name": "Ward 1978 (L)",
+        "zone": "L",
         "ward_code": "1978",
-        "ward_id": 45,
-        "ward_name": "Ward 1978 (L)",
-        "zone": "L",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 586637
+        "total_population": 586637,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1759,13 +1765,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2079",
+        "name": "Ward 2079 (M/E)",
+        "zone": "M/E",
         "ward_code": "2079",
-        "ward_id": 46,
-        "ward_name": "Ward 2079 (M/E)",
-        "zone": "M/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 47147
+        "total_population": 47147,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -1798,13 +1804,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2080",
+        "name": "Ward 2080 (M/E)",
+        "zone": "M/E",
         "ward_code": "2080",
-        "ward_id": 47,
-        "ward_name": "Ward 2080 (M/E)",
-        "zone": "M/E",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 760573
+        "total_population": 760573,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1837,13 +1843,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2179",
+        "name": "Ward 2179 (M/W)",
+        "zone": "M/W",
         "ward_code": "2179",
-        "ward_id": 48,
-        "ward_name": "Ward 2179 (M/W)",
-        "zone": "M/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 357518
+        "total_population": 357518,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1876,13 +1882,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2180",
+        "name": "Ward 2180 (M/W)",
+        "zone": "M/W",
         "ward_code": "2180",
-        "ward_id": 49,
-        "ward_name": "Ward 2180 (M/W)",
-        "zone": "M/W",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 54375
+        "total_population": 54375,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -1915,13 +1921,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2281",
+        "name": "Ward 2281 (N)",
+        "zone": "N",
         "ward_code": "2281",
-        "ward_id": 50,
-        "ward_name": "Ward 2281 (N)",
-        "zone": "N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 233451
+        "total_population": 233451,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -1954,13 +1960,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2282",
+        "name": "Ward 2282 (N)",
+        "zone": "N",
         "ward_code": "2282",
-        "ward_id": 51,
-        "ward_name": "Ward 2282 (N)",
-        "zone": "N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 54020
+        "total_population": 54020,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -1993,13 +1999,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2283",
+        "name": "Ward 2283 (N)",
+        "zone": "N",
         "ward_code": "2283",
-        "ward_id": 52,
-        "ward_name": "Ward 2283 (N)",
-        "zone": "N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 215682
+        "total_population": 215682,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -2032,13 +2038,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2284",
+        "name": "Ward 2284 (N)",
+        "zone": "N",
         "ward_code": "2284",
-        "ward_id": 53,
-        "ward_name": "Ward 2284 (N)",
-        "zone": "N",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 119700
+        "total_population": 119700,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -2071,13 +2077,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2384",
+        "name": "Ward 2384 (S)",
+        "zone": "S",
         "ward_code": "2384",
-        "ward_id": 54,
-        "ward_name": "Ward 2384 (S)",
-        "zone": "S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 216393
+        "total_population": 216393,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -2110,13 +2116,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2385",
+        "name": "Ward 2385 (S)",
+        "zone": "S",
         "ward_code": "2385",
-        "ward_id": 55,
-        "ward_name": "Ward 2385 (S)",
-        "zone": "S",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 527390
+        "total_population": 527390,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -2149,13 +2155,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2486",
+        "name": "Ward 2486 (T)",
+        "zone": "T",
         "ward_code": "2486",
-        "ward_id": 56,
-        "ward_name": "Ward 2486 (T)",
-        "zone": "T",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 102918
+        "total_population": 102918,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -2188,13 +2194,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2487",
+        "name": "Ward 2487 (T)",
+        "zone": "T",
         "ward_code": "2487",
-        "ward_id": 57,
-        "ward_name": "Ward 2487 (T)",
-        "zone": "T",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 206590
+        "total_population": 206590,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -2227,13 +2233,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "2488",
+        "name": "Ward 2488 (T)",
+        "zone": "T",
         "ward_code": "2488",
-        "ward_id": 58,
-        "ward_name": "Ward 2488 (T)",
-        "zone": "T",
         "district": "Mumbai Suburban",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 31955
+        "total_population": 31955,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2266,13 +2272,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "101",
+        "name": "Ward 101 (A)",
+        "zone": "A",
         "ward_code": "101",
-        "ward_id": 59,
-        "ward_name": "Ward 101 (A)",
-        "zone": "A",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 92528
+        "total_population": 92528,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -2305,13 +2311,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "102",
+        "name": "Ward 102 (A)",
+        "zone": "A",
         "ward_code": "102",
-        "ward_id": 60,
-        "ward_name": "Ward 102 (A)",
-        "zone": "A",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 32450
+        "total_population": 32450,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2344,13 +2350,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "103",
+        "name": "Ward 103 (A)",
+        "zone": "A",
         "ward_code": "103",
-        "ward_id": 61,
-        "ward_name": "Ward 103 (A)",
-        "zone": "A",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 23963
+        "total_population": 23963,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2383,13 +2389,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "104",
+        "name": "Ward 104 (A)",
+        "zone": "A",
         "ward_code": "104",
-        "ward_id": 62,
-        "ward_name": "Ward 104 (A)",
-        "zone": "A",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 12402
+        "total_population": 12402,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2422,13 +2428,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "105",
+        "name": "Ward 105 (A)",
+        "zone": "A",
         "ward_code": "105",
-        "ward_id": 63,
-        "ward_name": "Ward 105 (A)",
-        "zone": "A",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 23671
+        "total_population": 23671,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2461,13 +2467,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "206",
+        "name": "Ward 206 (B)",
+        "zone": "B",
         "ward_code": "206",
-        "ward_id": 64,
-        "ward_name": "Ward 206 (B)",
-        "zone": "B",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 26794
+        "total_population": 26794,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2500,13 +2506,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "207",
+        "name": "Ward 207 (B)",
+        "zone": "B",
         "ward_code": "207",
-        "ward_id": 65,
-        "ward_name": "Ward 207 (B)",
-        "zone": "B",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 14451
+        "total_population": 14451,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2539,13 +2545,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "208",
+        "name": "Ward 208 (B)",
+        "zone": "B",
         "ward_code": "208",
-        "ward_id": 66,
-        "ward_name": "Ward 208 (B)",
-        "zone": "B",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 55886
+        "total_population": 55886,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2578,13 +2584,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "209",
+        "name": "Ward 209 (B)",
+        "zone": "B",
         "ward_code": "209",
-        "ward_id": 67,
-        "ward_name": "Ward 209 (B)",
-        "zone": "B",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 30159
+        "total_population": 30159,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2617,13 +2623,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "310",
+        "name": "Ward 310 (C)",
+        "zone": "C",
         "ward_code": "310",
-        "ward_id": 68,
-        "ward_name": "Ward 310 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 23703
+        "total_population": 23703,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2656,13 +2662,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "311",
+        "name": "Ward 311 (C)",
+        "zone": "C",
         "ward_code": "311",
-        "ward_id": 69,
-        "ward_name": "Ward 311 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 25646
+        "total_population": 25646,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2695,13 +2701,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "312",
+        "name": "Ward 312 (C)",
+        "zone": "C",
         "ward_code": "312",
-        "ward_id": 70,
-        "ward_name": "Ward 312 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 37220
+        "total_population": 37220,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2734,13 +2740,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "313",
+        "name": "Ward 313 (C)",
+        "zone": "C",
         "ward_code": "313",
-        "ward_id": 71,
-        "ward_name": "Ward 313 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 17853
+        "total_population": 17853,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2773,13 +2779,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "314",
+        "name": "Ward 314 (C)",
+        "zone": "C",
         "ward_code": "314",
-        "ward_id": 72,
-        "ward_name": "Ward 314 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 30878
+        "total_population": 30878,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2812,13 +2818,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "315",
+        "name": "Ward 315 (C)",
+        "zone": "C",
         "ward_code": "315",
-        "ward_id": 73,
-        "ward_name": "Ward 315 (C)",
-        "zone": "C",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 30861
+        "total_population": 30861,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -2851,13 +2857,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "416",
+        "name": "Ward 416 (D)",
+        "zone": "D",
         "ward_code": "416",
-        "ward_id": 74,
-        "ward_name": "Ward 416 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 52217
+        "total_population": 52217,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2890,13 +2896,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "417",
+        "name": "Ward 417 (D)",
+        "zone": "D",
         "ward_code": "417",
-        "ward_id": 75,
-        "ward_name": "Ward 417 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 54783
+        "total_population": 54783,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2929,13 +2935,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "418",
+        "name": "Ward 418 (D)",
+        "zone": "D",
         "ward_code": "418",
-        "ward_id": 76,
-        "ward_name": "Ward 418 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 38581
+        "total_population": 38581,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -2968,13 +2974,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "419",
+        "name": "Ward 419 (D)",
+        "zone": "D",
         "ward_code": "419",
-        "ward_id": 77,
-        "ward_name": "Ward 419 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 15065
+        "total_population": 15065,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -3007,13 +3013,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "420",
+        "name": "Ward 420 (D)",
+        "zone": "D",
         "ward_code": "420",
-        "ward_id": 78,
-        "ward_name": "Ward 420 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 67661
+        "total_population": 67661,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3046,13 +3052,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "421",
+        "name": "Ward 421 (D)",
+        "zone": "D",
         "ward_code": "421",
-        "ward_id": 79,
-        "ward_name": "Ward 421 (D)",
-        "zone": "D",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 118559
+        "total_population": 118559,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3085,13 +3091,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "522",
+        "name": "Ward 522 (E)",
+        "zone": "E",
         "ward_code": "522",
-        "ward_id": 80,
-        "ward_name": "Ward 522 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 88149
+        "total_population": 88149,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3124,13 +3130,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "523",
+        "name": "Ward 523 (E)",
+        "zone": "E",
         "ward_code": "523",
-        "ward_id": 81,
-        "ward_name": "Ward 523 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 57232
+        "total_population": 57232,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3163,13 +3169,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "524",
+        "name": "Ward 524 (E)",
+        "zone": "E",
         "ward_code": "524",
-        "ward_id": 82,
-        "ward_name": "Ward 524 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 19851
+        "total_population": 19851,
+        "riskCategory": "Low"
       },
       "geometry": {
         "type": "Polygon",
@@ -3202,13 +3208,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "525",
+        "name": "Ward 525 (E)",
+        "zone": "E",
         "ward_code": "525",
-        "ward_id": 83,
-        "ward_name": "Ward 525 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 32121
+        "total_population": 32121,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3241,13 +3247,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "526",
+        "name": "Ward 526 (E)",
+        "zone": "E",
         "ward_code": "526",
-        "ward_id": 84,
-        "ward_name": "Ward 526 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 35980
+        "total_population": 35980,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3280,13 +3286,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "527",
+        "name": "Ward 527 (E)",
+        "zone": "E",
         "ward_code": "527",
-        "ward_id": 85,
-        "ward_name": "Ward 527 (E)",
-        "zone": "E",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 159953
+        "total_population": 159953,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3319,13 +3325,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "628",
+        "name": "Ward 628 (F/S)",
+        "zone": "F/S",
         "ward_code": "628",
-        "ward_id": 86,
-        "ward_name": "Ward 628 (F/S)",
-        "zone": "F/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 107563
+        "total_population": 107563,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3358,13 +3364,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "629",
+        "name": "Ward 629 (F/S)",
+        "zone": "F/S",
         "ward_code": "629",
-        "ward_id": 87,
-        "ward_name": "Ward 629 (F/S)",
-        "zone": "F/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 168063
+        "total_population": 168063,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -3397,13 +3403,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "630",
+        "name": "Ward 630 (F/S)",
+        "zone": "F/S",
         "ward_code": "630",
-        "ward_id": 88,
-        "ward_name": "Ward 630 (F/S)",
-        "zone": "F/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 85346
+        "total_population": 85346,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3436,13 +3442,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "731",
+        "name": "Ward 731 (F/N)",
+        "zone": "F/N",
         "ward_code": "731",
-        "ward_id": 89,
-        "ward_name": "Ward 731 (F/N)",
-        "zone": "F/N",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 44768
+        "total_population": 44768,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3475,13 +3481,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "732",
+        "name": "Ward 732 (F/N)",
+        "zone": "F/N",
         "ward_code": "732",
-        "ward_id": 90,
-        "ward_name": "Ward 732 (F/N)",
-        "zone": "F/N",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 484266
+        "total_population": 484266,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -3514,13 +3520,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "835",
+        "name": "Ward 835 (G/S)",
+        "zone": "G/S",
         "ward_code": "835",
-        "ward_id": 91,
-        "ward_name": "Ward 835 (G/S)",
-        "zone": "G/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 48021
+        "total_population": 48021,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3553,13 +3559,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "836",
+        "name": "Ward 836 (G/S)",
+        "zone": "G/S",
         "ward_code": "836",
-        "ward_id": 92,
-        "ward_name": "Ward 836 (G/S)",
-        "zone": "G/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 148827
+        "total_population": 148827,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3592,13 +3598,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "837",
+        "name": "Ward 837 (G/S)",
+        "zone": "G/S",
         "ward_code": "837",
-        "ward_id": 93,
-        "ward_name": "Ward 837 (G/S)",
-        "zone": "G/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 96529
+        "total_population": 96529,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3631,13 +3637,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "838",
+        "name": "Ward 838 (G/S)",
+        "zone": "G/S",
         "ward_code": "838",
-        "ward_id": 94,
-        "ward_name": "Ward 838 (G/S)",
-        "zone": "G/S",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 84372
+        "total_population": 84372,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3670,13 +3676,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "933",
+        "name": "Ward 933 (G/N)",
+        "zone": "G/N",
         "ward_code": "933",
-        "ward_id": 95,
-        "ward_name": "Ward 933 (G/N)",
-        "zone": "G/N",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 454589
+        "total_population": 454589,
+        "riskCategory": "Severe"
       },
       "geometry": {
         "type": "Polygon",
@@ -3709,13 +3715,13 @@
     {
       "type": "Feature",
       "properties": {
+        "id": "934",
+        "name": "Ward 934 (G/N)",
+        "zone": "G/N",
         "ward_code": "934",
-        "ward_id": 96,
-        "ward_name": "Ward 934 (G/N)",
-        "zone": "G/N",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 80583
+        "total_population": 80583,
+        "riskCategory": "High"
       },
       "geometry": {
         "type": "Polygon",
@@ -3748,13 +3754,13 @@
     {
       "type": "Feature",
       "properties": {
-        "ward_code": "935",
-        "ward_id": 97,
-        "ward_name": "Ward 935 (G/N)",
+        "id": "935",
+        "name": "Ward 935 (G/N)",
         "zone": "G/N",
+        "ward_code": "935",
         "district": "Mumbai",
-        "sub_district": "Greater Mumbai (M Corp.) (Part)",
-        "total_population": 63867
+        "total_population": 63867,
+        "riskCategory": "Moderate"
       },
       "geometry": {
         "type": "Polygon",
@@ -3785,4 +3791,4 @@
       }
     }
   ]
-}
+};

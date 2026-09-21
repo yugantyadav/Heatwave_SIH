@@ -7,7 +7,7 @@ import ZoneBrowser from "./components/ZoneBrowser";
 import AdminPanel from "./components/admin/AdminPanel";
 import Spinner from "./components/Spinner";
 import ErrorBanner from "./components/ErrorBanner";
-import { fetchWardRisk, fetchWards } from "./services/api";
+import { fetchWard, fetchWardRisk, fetchWards } from "./services/api";
 import { getRiskRank, RISK_ORDER } from "./utils/riskConfig";
 import "./App.css";
 
@@ -34,6 +34,7 @@ export default function App() {
   const [wardDetail, setWardDetail] = useState(null);
   const [wardDetailError, setWardDetailError] = useState(null);
   const [isWardDetailLoading, setIsWardDetailLoading] = useState(false);
+  const [wardMeta, setWardMeta] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" | "admin"
   const [searchTerm, setSearchTerm] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
@@ -62,12 +63,23 @@ export default function App() {
     if (!wardId) {
       setWardDetail(null);
       setWardDetailError(null);
+      setWardMeta(null);
       return undefined;
     }
 
     let cancelled = false;
     setIsWardDetailLoading(true);
     setWardDetailError(null);
+    // Ward record (GET /api/wards/{id}) enriches the panel with live
+    // population/district; risk detail (GET /api/risk/wards/{id}) drives
+    // the scores. Both are fetched in parallel for the same selection.
+    fetchWard(wardId)
+      .then((data) => {
+        if (!cancelled) setWardMeta(data);
+      })
+      .catch(() => {
+        if (!cancelled) setWardMeta(null); // geojson props already cover the basics
+      });
     fetchWardRisk(wardId)
       .then((data) => {
         if (!cancelled) setWardDetail(data);
@@ -222,7 +234,7 @@ export default function App() {
           </section>
 
           <aside className="sidebar">
-            <WardDetailPanel selectedWard={selectedWard} detail={wardDetail} isLoading={isWardDetailLoading} error={wardDetailError} onRetry={() => selectedWard && handleWardSelect({ ...selectedWard })} />
+            <WardDetailPanel selectedWard={selectedWard} detail={wardDetail} wardMeta={wardMeta} isLoading={isWardDetailLoading} error={wardDetailError} onRetry={() => selectedWard && handleWardSelect({ ...selectedWard })} />
             <ForecastChart selectedWard={selectedWard} />
             <ZoneBrowser wards={filteredWards} selectedWardId={selectedWard?.properties.id} onWardSelect={handleWardSelect} />
             <RiskLegend />

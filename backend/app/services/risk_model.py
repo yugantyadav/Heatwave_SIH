@@ -1,7 +1,27 @@
 # Risk model service
-from app.core.config import settings
+# Prototype mortality-weighted scorer. Optionally blends the Isolation Forest
+# anomaly score from ml/models/isolation_forest.joblib (loaded by
+# ml/risk_model.py) when the ml package is importable.
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "ml"))
+
+try:
+    from risk_model import detect_heat_anomaly as _ml_anomaly
+
+    _HAVE_ML_ANOMALY = True
+    _MODEL_PATH = os.path.join(
+        os.path.dirname(__file__), "..", "..", "..", "ml", "models", "isolation_forest.joblib"
+    )
+except Exception:
+    _HAVE_ML_ANOMALY = False
+    _MODEL_PATH = None
+
 
 class MortalityRiskService:
+    MODEL_PATH = os.path.normpath(_MODEL_PATH) if _MODEL_PATH else None
+    USE_ML_ANOMALY = _HAVE_ML_ANOMALY
     DEFAULT_COEFFICIENTS = {
         "elderly_weight": 0.15,
         "outdoor_worker_weight": 0.08,
@@ -18,16 +38,28 @@ class MortalityRiskService:
     }
 
     @classmethod
-    def calculate_risk(cls, heat_index: float, wbgt: float, elderly_percent: float, outdoor_worker_density: float):
+    def calculate_risk(cls, heat_index: float, wbgt: float, elderly_percent: float, outdoor_worker_density: float,
+                       temperature_c: float | None = None, humidity: float | None = None,
+                       wind_speed: float = 5.0, solar_radiation: float = 500.0):
         base_risk = cls._base_risk_from_thermal(heat_index, wbgt)
         demographic_multiplier = 1 + (elderly_percent / 100 * cls.DEFAULT_COEFFICIENTS["elderly_weight"]) + (outdoor_worker_density * cls.DEFAULT_COEFFICIENTS["outdoor_worker_weight"])
         final_score = min(base_risk * demographic_multiplier * 0.5, 100)
+        anomaly_score = None
+        if cls.USE_ML_ANOMALY and temperature_c is not None and humidity is not None:
+            try:
+                _, anomaly_score = _ml_anomaly(temperature_c, humidity, wind_speed, solar_radiation)
+                # Blend 10% ML anomaly so the prototype reacts to unusual wx.
+                final_score = min(final_score * 0.9 + float(anomaly_score) * 0.1, 100)
+            except Exception:
+                anomaly_score = None
         risk_category = cls._category(final_score)
         return {
             "risk_category": risk_category,
             "final_score": round(final_score, 1),
             "base_risk": round(base_risk, 1),
             "demographic_multiplier": round(demographic_multiplier, 2),
+            "anomaly_score": round(float(anomaly_score), 1) if anomaly_score is not None else None,
+            "ml_model_path": cls.MODEL_PATH,
         }
 
     @staticmethod
@@ -48,7 +80,7 @@ class MortalityRiskService:
 
     @staticmethod
     def _category(score: float):
-        if score < 30: return "low"
-        elif score < 50: return "moderate"
-        elif score < 75: return "high"
-        else: return "severe"
+        if score < 30: return "LOW"
+        elif score < 50: return "MODERATE"
+        elif score < 75: return "HIGH"
+        else: return "SEVERE"

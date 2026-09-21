@@ -1,13 +1,23 @@
+import { useState } from "react";
 import { getRiskInfo } from "../utils/riskConfig";
+import { triggerAlert } from "../services/api";
 import Spinner from "./Spinner";
 import ErrorBanner from "./ErrorBanner";
 
 /**
  * Detail view for the ward selected on the map or in the zone browser.
- * Data loading lives in App so the same request can serve this panel and
- * Leaflet's popup through the cached API service.
+ * Data loading lives in App (GET /api/wards/{id} for `wardMeta`, and
+ * GET /api/risk/wards/{id} for `detail`) so the same requests can serve
+ * this panel and Leaflet's popup through the cached API service.
+ *
+ * The "Send alert" button POSTs to /api/alerts/trigger (sandbox when no
+ * Twilio credentials are configured) with its own inline
+ * loading/error/success states.
  */
-export default function WardDetailPanel({ selectedWard, detail, isLoading, error, onRetry }) {
+export default function WardDetailPanel({ selectedWard, detail, wardMeta, isLoading, error, onRetry }) {
+  const [alertStatus, setAlertStatus] = useState(null); // "sending" | "sent" | null
+  const [alertError, setAlertError] = useState(null);
+
   if (!selectedWard) {
     return (
       <div className="panel">
@@ -17,8 +27,29 @@ export default function WardDetailPanel({ selectedWard, detail, isLoading, error
     );
   }
 
-  const wardName = selectedWard.properties.name;
+  const wardName = selectedWard.properties.name ?? wardMeta?.ward_name ?? "Ward";
   const riskInfo = getRiskInfo(detail?.riskCategory ?? selectedWard.properties.riskCategory);
+  const population = wardMeta?.total_population ?? selectedWard.properties.total_population;
+  const district = wardMeta?.district ?? selectedWard.properties.district;
+
+  async function handleSendAlert() {
+    if (!detail) return;
+    setAlertStatus("sending");
+    setAlertError(null);
+    try {
+      await triggerAlert({
+        wardCode: selectedWard.properties.id,
+        riskCategory: detail.riskCategory,
+        message: detail.advisory ?? `${detail.riskCategory} heat risk in ${wardName}.`,
+        channel: "sms",
+      });
+      setAlertStatus("sent");
+      setTimeout(() => setAlertStatus(null), 3000);
+    } catch (err) {
+      setAlertStatus(null);
+      setAlertError(err.message);
+    }
+  }
 
   return (
     <div className="panel ward-detail-panel">
@@ -29,6 +60,13 @@ export default function WardDetailPanel({ selectedWard, detail, isLoading, error
         </div>
         <span className="ward-code">{selectedWard.properties.id}</span>
       </div>
+      {(population || district) && (
+        <p className="panel-empty" style={{ marginTop: 0 }}>
+          {[district, population ? `${Number(population).toLocaleString("en-IN")} residents` : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
 
       {isLoading && <Spinner label="Loading risk data…" />}
       {error && <ErrorBanner message={error} onRetry={onRetry} />}
@@ -67,6 +105,14 @@ export default function WardDetailPanel({ selectedWard, detail, isLoading, error
               <p>{detail.advisory}</p>
             </div>
           </div>
+
+          <div className="admin-save-row">
+            <button type="button" className="save-button" onClick={handleSendAlert} disabled={alertStatus === "sending"}>
+              {alertStatus === "sending" ? "Sending…" : "Send alert (SMS)"}
+            </button>
+            {alertStatus === "sent" && <span className="save-confirmation">✓ Alert logged</span>}
+          </div>
+          {alertError && <ErrorBanner message={alertError} onRetry={handleSendAlert} />}
         </>
       )}
     </div>

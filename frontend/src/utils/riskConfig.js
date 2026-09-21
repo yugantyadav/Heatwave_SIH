@@ -47,18 +47,29 @@ const FALLBACK_RISK = {
   description: "Risk data unavailable for this ward.",
 };
 
+/** "HIGH" | "high" | "High" -> "High" (frontend canonical form). */
+export function normalizeRiskCategory(value) {
+  if (!value) return "Moderate";
+  const t = String(value).trim().toLowerCase();
+  if (t === "low") return "Low";
+  if (t === "moderate") return "Moderate";
+  if (t === "high") return "High";
+  if (t === "severe") return "Severe";
+  return "Moderate";
+}
+
 /** Returns the color for a given risk category, with a safe fallback. */
 export function getRiskColor(riskCategory) {
-  return (RISK_LEVELS[riskCategory] ?? FALLBACK_RISK).color;
+  return (RISK_LEVELS[normalizeRiskCategory(riskCategory)] ?? FALLBACK_RISK).color;
 }
 
 /** Returns the full { color, label, description } entry for a category. */
 export function getRiskInfo(riskCategory) {
-  return RISK_LEVELS[riskCategory] ?? FALLBACK_RISK;
+  return RISK_LEVELS[normalizeRiskCategory(riskCategory)] ?? FALLBACK_RISK;
 }
 
 /** Returns a sortable severity score for summaries and default selection. */
 export function getRiskRank(riskCategory) {
-  const index = RISK_ORDER.indexOf(riskCategory);
+  const index = RISK_ORDER.indexOf(normalizeRiskCategory(riskCategory));
   return index === -1 ? -1 : index;
 }

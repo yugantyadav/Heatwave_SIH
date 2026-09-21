@@ -90,12 +90,13 @@ export default function HeatMap({ wards, onWardSelect, selectedWardId }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {/* Note: react-leaflet's <GeoJSON> only draws `data` once and won't
-          redraw on its own if `data` changes later. That's fine today
-          (App.jsx fetches once), but if you add live polling, give this
-          a `key` prop that changes with new data (e.g. key={wards.fetchedAt})
-          to force Leaflet to redraw it. */}
-      <GeoJSON data={wards} style={styleWard} onEachFeature={onEachWard} />
+      {/* key forces Leaflet to redraw when filters/selection change data. */}
+      <GeoJSON
+        key={`${wards.features.length}-${selectedWardId ?? "none"}`}
+        data={wards}
+        style={styleWard}
+        onEachFeature={onEachWard}
+      />
     </MapContainer>
   );
 }
