@@ -101,13 +101,26 @@ def calculate_thermal_score(
     #
     # These thresholds are configurable prototype
     # normalization values, not medical thresholds.
+    #
+    # IMPORTANT: heat_index comes from the Lu & Romps (2022)
+    # model (see thermal_engine.py), which — unlike the older
+    # Rothfusz formula — is not capped and can legitimately
+    # exceed 100 as conditions approach the human
+    # thermoregulatory survivability limit. A ceiling of 60
+    # here caused EVERY Mumbai day at ~38C/75% RH or hotter to
+    # saturate this score at 100, making the model unable to
+    # distinguish a "bad" day from a "catastrophic" one. The
+    # ceiling below (100) keeps the score discriminative across
+    # the realistic Indian pre-monsoon range. Recalibrate this
+    # against your own backtest data before presenting it as
+    # anything more than a prototype scaling choice.
 
     heat_index_score = (
-        (heat_index - 27) / (60 - 27)
+        (heat_index - 27) / (100 - 27)
     ) * 100
 
     wbgt_score = (
-        (wbgt - 18) / (40 - 18)
+        (wbgt - 18) / (42 - 18)
     ) * 100
 
     heat_index_score = max(
