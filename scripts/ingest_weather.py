@@ -132,6 +132,7 @@ async def ingest(limit: int | None = None):
                 wbgt=wb,
                 elderly_percent=w.elderly_percent or 8.57,
                 outdoor_worker_density=w.outdoor_worker_density or 0.5,
+                total_population=w.total_population,
             )
             existing_risk = await session.execute(
                 select(RiskScore).where(RiskScore.ward_code == w.ward_code)

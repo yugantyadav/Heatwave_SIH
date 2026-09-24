@@ -7,8 +7,8 @@ import ZoneBrowser from "./components/ZoneBrowser";
 import AdminPanel from "./components/admin/AdminPanel";
 import Spinner from "./components/Spinner";
 import ErrorBanner from "./components/ErrorBanner";
-import { fetchWard, fetchWardRisk, fetchWards } from "./services/api";
-import { getRiskRank, RISK_ORDER } from "./utils/riskConfig";
+import { fetchWard, fetchWardRisk, fetchWards, fetchAlerts } from "./services/api";
+import { getRiskRank, RISK_ORDER, normalizeRiskCategory, getRiskColor } from "./utils/riskConfig";
 import "./App.css";
 
 /**
@@ -38,10 +38,24 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" | "admin"
   const [searchTerm, setSearchTerm] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
+  const [alerts, setAlerts] = useState(null);
+  const [alertsError, setAlertsError] = useState(null);
 
   useEffect(() => {
     loadWards();
+    loadAlerts();
+    const timer = setInterval(loadAlerts, 30000);
+    return () => clearInterval(timer);
   }, []);
+
+  function loadAlerts() {
+    fetchAlerts()
+      .then((data) => {
+        setAlerts(data?.alerts ?? []);
+        setAlertsError(null);
+      })
+      .catch((err) => setAlertsError(err.message));
+  }
 
   function loadWards() {
     setWardsError(null);
@@ -231,6 +245,53 @@ export default function App() {
             )}
             </div>
             <div className="map-footnote"><span className="map-footnote-dot" /> Live ward risk layer <span>·</span> Click a ward for details</div>
+
+            <section className="alerts-window" aria-label="Active heat alerts">
+              <div className="alerts-window-header">
+                <div>
+                  <span className="section-kicker">Alert center</span>
+                  <h2 className="map-title">Active alerts</h2>
+                </div>
+                <span className="alerts-count-pill">
+                  {alerts ? `${alerts.length} total` : "…"}
+                </span>
+              </div>
+              {alertsError && (
+                <div className="alerts-empty alerts-empty-error">Couldn&apos;t load alerts: {alertsError}</div>
+              )}
+              {!alertsError && !alerts && <div className="alerts-empty">Loading alerts…</div>}
+              {!alertsError && alerts && alerts.length === 0 && (
+                <div className="alerts-empty">No active alerts. Wards below the High threshold are quiet.</div>
+              )}
+              {!alertsError && alerts && alerts.length > 0 && (
+                <ul className="alerts-list">
+                  {alerts.slice(0, 8).map((alert) => {
+                    const level = normalizeRiskCategory(alert.triggered_by);
+                    return (
+                      <li key={alert.id} className="alert-row">
+                        <span className="alert-severity-dot" style={{ backgroundColor: getRiskColor(level) }} aria-hidden="true" />
+                        <div className="alert-body">
+                          <div className="alert-meta">
+                            <strong className="alert-ward">Ward {alert.ward_code}</strong>
+                            <span className="alert-badge" style={{ backgroundColor: getRiskColor(level) }}>
+                              {level}
+                            </span>
+                            <span className="alert-channel">{alert.alert_channel?.toUpperCase()} · {alert.alert_status}</span>
+                          </div>
+                          <p className="alert-message">{alert.message}</p>
+                          <time className="alert-time" dateTime={alert.sent_at}>
+                            {alert.sent_at ? new Date(alert.sent_at).toLocaleString() : ""}
+                          </time>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {alerts && alerts.length > 8 && (
+                <div className="alerts-more">+{alerts.length - 8} more in the log</div>
+              )}
+            </section>
           </section>
 
           <aside className="sidebar">

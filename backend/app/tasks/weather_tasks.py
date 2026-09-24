@@ -97,6 +97,7 @@ async def _compute_async():
                 elderly_percent=w.elderly_percent or 8.57,
                 outdoor_worker_density=w.outdoor_worker_density or 0.5,
                 temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
+                total_population=w.total_population,
             )
             session.add(RiskScore(
                 ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),
@@ -118,12 +119,20 @@ async def _trigger_async():
         await conn.run_sync(Base.metadata.create_all)
     async with AsyncSessionLocal() as session:
         advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
-        risks = (await session.execute(select(RiskScore).order_by(desc(RiskScore.created_at)).limit(200))).scalars().all()
-        seen, created = set(), 0
+        # Latest risk row per ward (query returns newest-first).
+        risks = (await session.execute(select(RiskScore).order_by(desc(RiskScore.created_at)))).scalars().all()
+        latest_by_ward = {}
         for r in risks:
-            if r.ward_code in seen or r.risk_category not in ("HIGH", "SEVERE"):
+            latest_by_ward.setdefault(r.ward_code, r)
+        # Dedupe on (ward_code, risk_category) so re-runs don't spam the log.
+        existing = (await session.execute(select(Alert))).scalars().all()
+        already = {(a.ward_code, a.triggered_by) for a in existing}
+        created = 0
+        for r in latest_by_ward.values():
+            if r.risk_category not in ("HIGH", "SEVERE"):
                 continue
-            seen.add(r.ward_code)
+            if (r.ward_code, r.risk_category) in already:
+                continue
             tmpl = advisories.get(r.risk_category)
             msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
             session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,

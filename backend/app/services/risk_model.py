@@ -25,6 +25,7 @@ class MortalityRiskService:
     DEFAULT_COEFFICIENTS = {
         "elderly_weight": 0.15,
         "outdoor_worker_weight": 0.08,
+        "population_weight": 0.35,
         "base_risk_low": 10,
         "base_risk_moderate": 25,
         "base_risk_high": 40,
@@ -40,16 +41,25 @@ class MortalityRiskService:
     @classmethod
     def calculate_risk(cls, heat_index: float, wbgt: float, elderly_percent: float, outdoor_worker_density: float,
                        temperature_c: float | None = None, humidity: float | None = None,
-                       wind_speed: float = 5.0, solar_radiation: float = 500.0):
+                       wind_speed: float = 5.0, solar_radiation: float = 500.0,
+                       total_population: int | None = None):
         base_risk = cls._base_risk_from_thermal(heat_index, wbgt)
-        demographic_multiplier = 1 + (elderly_percent / 100 * cls.DEFAULT_COEFFICIENTS["elderly_weight"]) + (outdoor_worker_density * cls.DEFAULT_COEFFICIENTS["outdoor_worker_weight"])
-        final_score = min(base_risk * demographic_multiplier * 0.5, 100)
+        demographic_multiplier = 1 + (elderly_percent / 100 * cls.DEFAULT_COEFFICIENTS["elderly_weight"]) + (
+            outdoor_worker_density * cls.DEFAULT_COEFFICIENTS["outdoor_worker_weight"]
+        )
+        # Population exposure: denser wards carry higher absolute heat-health risk.
+        if total_population:
+            demographic_multiplier += min(total_population / 2_000_000, 1.0) * cls.DEFAULT_COEFFICIENTS["population_weight"]
+        final_score = min(base_risk * demographic_multiplier, 100)
         anomaly_score = None
         if cls.USE_ML_ANOMALY and temperature_c is not None and humidity is not None:
             try:
                 _, anomaly_score = _ml_anomaly(temperature_c, humidity, wind_speed, solar_radiation)
-                # Blend 10% ML anomaly so the prototype reacts to unusual wx.
-                final_score = min(final_score * 0.9 + float(anomaly_score) * 0.1, 100)
+                anomaly = float(anomaly_score)
+                # Only blend when the anomaly is actually elevated — a normal
+                # reading (0) must never haircut the thermal score.
+                if anomaly > 0:
+                    final_score = min(final_score * 0.9 + anomaly * 0.1, 100)
             except Exception:
                 anomaly_score = None
         risk_category = cls._category(final_score)
