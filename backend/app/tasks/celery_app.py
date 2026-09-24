@@ -4,8 +4,8 @@ from app.core.config import settings
 
 celery_app = Celery(
     "heatwave_ews",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker="redis://localhost:6379/0",
+    backend="rpc://",
     include=["app.tasks.weather_tasks"],
 )
 
@@ -21,17 +21,14 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     beat_schedule={
-        # Forecast refresh every N hours (default 6).
         "refresh-forecast": {
             "task": "tasks.weather_tasks.refresh",
             "schedule": schedule(run_every=REFRESH_SECS),
         },
-        # Risk computation shortly after each forecast refresh.
         "compute-risk": {
             "task": "tasks.risk_tasks.compute",
             "schedule": schedule(run_every=REFRESH_SECS),
         },
-        # Alert check every hour.
         "check-alerts": {
             "task": "tasks.alert_tasks.trigger",
             "schedule": schedule(run_every=3600),
@@ -39,7 +36,6 @@ celery_app.conf.update(
     },
 )
 
-# Backwards-compatible aliases used by older docs/scripts.
 @celery_app.task(name="tasks.refresh_forecast")
 def refresh_forecast():
     from app.tasks.weather_tasks import refresh as _refresh

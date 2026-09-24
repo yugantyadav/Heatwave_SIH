@@ -18,7 +18,9 @@ node_modules/
 .idea/
 
 # Django
+*.db
 *.db.sqlite3
+celerybeat-schedule*
 
 # Postgres
 postgres/

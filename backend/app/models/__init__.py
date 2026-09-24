@@ -1,6 +1,4 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text
-from sqlalchemy.dialects.postgresql import JSON
-from geoalchemy2 import Geometry
 from app.db.session import Base
 import datetime
 
@@ -11,7 +9,7 @@ class Ward(Base):
     ward_name = Column(String, nullable=False)
     zone = Column(String)
     district = Column(String)
-    geometry = Column(Geometry(geometry_type="POLYGON", srid=4326))
+    geometry = Column(Text)
     total_population = Column(Integer, default=0)
     total_males = Column(Integer, default=0)
     total_females = Column(Integer, default=0)
@@ -44,7 +42,7 @@ class RiskScore(Base):
     elderly_percent = Column(Float)
     outdoor_worker_density = Column(Float)
     demographic_multiplier = Column(Float)
-    breakdown = Column(JSON)
+    breakdown = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class Alert(Base):

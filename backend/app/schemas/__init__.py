@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+import json
 
 # Ward Schemas
 class WardBase(BaseModel):
@@ -18,6 +19,13 @@ class WardBase(BaseModel):
 class WardResponse(WardBase):
     id: int
     geometry: Optional[Dict[str, Any]] = None
+
+    @field_validator("geometry", mode="before")
+    @classmethod
+    def parse_geometry(cls, v):
+        if isinstance(v, str):
+            return json.loads(v) if v else None
+        return v
 
 class WardListResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -43,6 +51,13 @@ class RiskScoreResponse(RiskScoreBase):
     outdoor_worker_density: Optional[float] = None
     breakdown: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
+
+    @field_validator("breakdown", mode="before")
+    @classmethod
+    def parse_breakdown(cls, v):
+        if isinstance(v, str):
+            return json.loads(v) if v else None
+        return v
 
 class RiskMapResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

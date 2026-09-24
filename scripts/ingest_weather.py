@@ -133,19 +133,33 @@ async def ingest(limit: int | None = None):
                 elderly_percent=w.elderly_percent or 8.57,
                 outdoor_worker_density=w.outdoor_worker_density or 0.5,
             )
-            session.add(
-                RiskScore(
-                    ward_code=w.ward_code,
-                    risk_category=str(risk["risk_category"]).upper(),
-                    final_score=risk["final_score"],
-                    heat_index=hi,
-                    wbgt=wb,
-                    elderly_percent=w.elderly_percent,
-                    outdoor_worker_density=w.outdoor_worker_density,
-                    demographic_multiplier=risk["demographic_multiplier"],
-                    breakdown={"base_risk": risk["base_risk"], "source": "ingest_weather.py"},
-                )
+            existing_risk = await session.execute(
+                select(RiskScore).where(RiskScore.ward_code == w.ward_code)
             )
+            existing = existing_risk.scalar_one_or_none()
+            if existing:
+                existing.risk_category = str(risk["risk_category"]).upper()
+                existing.final_score = risk["final_score"]
+                existing.heat_index = hi
+                existing.wbgt = wb
+                existing.elderly_percent = w.elderly_percent
+                existing.outdoor_worker_density = w.outdoor_worker_density
+                existing.demographic_multiplier = risk["demographic_multiplier"]
+                existing.breakdown = json.dumps({"base_risk": risk["base_risk"], "source": "ingest_weather.py"})
+            else:
+                session.add(
+                    RiskScore(
+                        ward_code=w.ward_code,
+                        risk_category=str(risk["risk_category"]).upper(),
+                        final_score=risk["final_score"],
+                        heat_index=hi,
+                        wbgt=wb,
+                        elderly_percent=w.elderly_percent,
+                        outdoor_worker_density=w.outdoor_worker_density,
+                        demographic_multiplier=risk["demographic_multiplier"],
+                    breakdown=json.dumps({"base_risk": risk["base_risk"], "source": "ingest_weather.py"}),
+                )
+                )
         await session.commit()
         count = len(wards)
     await engine.dispose()

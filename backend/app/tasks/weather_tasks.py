@@ -3,17 +3,20 @@
 Each task is idempotent and safe to run manually:
     celery -A app.tasks.celery_app worker --loglevel=info
     celery -A app.tasks.celery_app beat --loglevel=info
+
+Uses synchronous SQLite (Celery worker process), no async engine needed.
 """
 import asyncio
 import json
 import os
+from contextlib import asynccontextmanager
 
 import aiohttp
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.config import settings
-from app.db.session import Base
+from app.db.session import Base, AsyncSessionLocal
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading
 from app.services.risk_model import MortalityRiskService
 from app.services.thermal_index import ThermalIndexService
@@ -21,16 +24,15 @@ from app.tasks.celery_app import celery_app
 
 MUMBAI_LAT, MUMBAI_LON = 19.076, 72.8777
 
+DB_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "heatwave.db"))
 
-async def _engine():
-    engine = create_async_engine(settings.DATABASE_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    return engine
+
+def _engine():
+    return create_async_engine(settings.DATABASE_URL, echo=False)
 
 
 async def _refresh_async():
-    engine = await _engine()
+    engine = _engine()
     params = {
         "latitude": MUMBAI_LAT,
         "longitude": MUMBAI_LON,
@@ -50,7 +52,6 @@ async def _refresh_async():
         wc = int(hourly.get("weathercode", [0])[-1])
         source = "open-meteo"
     except Exception:
-        # Offline fallback: reuse the bundled forecast file's latest hour.
         fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
         with open(fc_path) as f:
             fc = json.load(f)
@@ -61,7 +62,9 @@ async def _refresh_async():
         wc = int(h["weathercode"][-1])
         source = "bundled-fallback"
     th = ThermalIndexService.calculate(t, rh)
-    async with AsyncSession(engine) as session:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as session:
         wards = (await session.execute(select(Ward))).scalars().all()
         for w in wards:
             session.add(WeatherReading(
@@ -77,8 +80,10 @@ async def _refresh_async():
 
 
 async def _compute_async():
-    engine = await _engine()
-    async with AsyncSession(engine) as session:
+    engine = _engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as session:
         wards = (await session.execute(select(Ward))).scalars().all()
         n = 0
         for w in wards:
@@ -98,8 +103,8 @@ async def _compute_async():
                 final_score=risk["final_score"], heat_index=wr.heat_index, wbgt=wr.wbgt,
                 elderly_percent=w.elderly_percent, outdoor_worker_density=w.outdoor_worker_density,
                 demographic_multiplier=risk["demographic_multiplier"],
-                breakdown={"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
-                           "source": "celery-compute-risk"},
+                breakdown=json.dumps({"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
+                           "source": "celery-compute-risk"}),
             ))
             n += 1
         await session.commit()
@@ -108,8 +113,10 @@ async def _compute_async():
 
 
 async def _trigger_async():
-    engine = await _engine()
-    async with AsyncSession(engine) as session:
+    engine = _engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as session:
         advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
         risks = (await session.execute(select(RiskScore).order_by(desc(RiskScore.created_at)).limit(200))).scalars().all()
         seen, created = set(), 0

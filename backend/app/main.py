@@ -1,15 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.db.session import engine, Base
+from sqlalchemy import create_engine, text
+from app.db.session import Base
 from app.core.config import settings
+
+_sync_engine = create_engine(settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "sqlite:///"), echo=False)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    Base.metadata.create_all(bind=_sync_engine)
     yield
-    await engine.dispose()
+    _sync_engine.dispose()
 
 app = FastAPI(title="Heatwave EWS", version="1.0.0", lifespan=lifespan)
 

@@ -88,6 +88,7 @@ async def seed_wards():
                 "ward_name": p["ward_name"],
                 "zone": p.get("zone"),
                 "district": p.get("district"),
+                "geometry": json.dumps(feat.get("geometry")),
                 "total_population": int(p.get("total_population") or 0),
                 "total_males": 0,
                 "total_females": 0,

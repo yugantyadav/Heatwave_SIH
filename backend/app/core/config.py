@@ -1,8 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Extra
 import os
 
-_BACKEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -10,8 +9,7 @@ class Settings(BaseSettings):
         extra="allow",
     )
 
-    DATABASE_URL: str = "postgresql+asyncpg://yugant:yugant@localhost:5434/heatwave"
-    REDIS_URL: str = "redis://localhost:6379/0"
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{os.path.join(_BACKEND_DIR, 'heatwave.db')}"
     ENVIRONMENT: str = "development"
     FORECAST_REFRESH_HOURS: int = 6
     OPEN_METEO_API_KEY: str = ""
