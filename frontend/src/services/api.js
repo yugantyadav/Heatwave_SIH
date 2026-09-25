@@ -215,13 +215,16 @@ export async function fetchAlerts() {
 // ---------------------------------------------------------------------------
 
 function thresholdsListToObject(rows) {
+  // Admin leaves Severe blank for "no upper bound"; the API may return null
+  // or a legacy 0 — both mean blank, never a valid cutoff.
+  const cutoff = (v) => (v === null || v === undefined || v === 0 ? null : v);
   const hi = rows.find((r) => r.config_type === "heat_index") ?? {};
   const wb = rows.find((r) => r.config_type === "wbgt") ?? {};
   return {
-    Low: { maxHeatIndexC: hi.low_threshold ?? null, maxWbgtC: wb.low_threshold ?? null },
-    Moderate: { maxHeatIndexC: hi.moderate_threshold ?? null, maxWbgtC: wb.moderate_threshold ?? null },
-    High: { maxHeatIndexC: hi.high_threshold ?? null, maxWbgtC: wb.high_threshold ?? null },
-    Severe: { maxHeatIndexC: hi.severe_threshold ?? null, maxWbgtC: wb.severe_threshold ?? null },
+    Low: { maxHeatIndexC: cutoff(hi.low_threshold), maxWbgtC: cutoff(wb.low_threshold) },
+    Moderate: { maxHeatIndexC: cutoff(hi.moderate_threshold), maxWbgtC: cutoff(wb.moderate_threshold) },
+    High: { maxHeatIndexC: cutoff(hi.high_threshold), maxWbgtC: cutoff(wb.high_threshold) },
+    Severe: { maxHeatIndexC: cutoff(hi.severe_threshold), maxWbgtC: cutoff(wb.severe_threshold) },
   };
 }
 

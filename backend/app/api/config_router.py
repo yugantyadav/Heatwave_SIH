@@ -35,13 +35,15 @@ async def save_thresholds(payload: Union[List[Dict[str, Any]], Dict[str, Any]], 
             continue
         result = await db.execute(select(ThresholdConfig).where(ThresholdConfig.config_type == ctype))
         existing = result.scalar_one_or_none()
-        vals = {k: r.get(k) for k in ("low_threshold", "moderate_threshold", "high_threshold", "severe_threshold")}
+        keys = ("low_threshold", "moderate_threshold", "high_threshold", "severe_threshold")
         if existing:
-            for k, v in vals.items():
-                if v is not None:
-                    setattr(existing, k, v)
+            # Keys present with an explicit null clear the value (blank Severe
+            # = "no upper bound"); absent keys are left untouched.
+            for k in keys:
+                if k in r:
+                    setattr(existing, k, r.get(k))
         else:
-            db.add(ThresholdConfig(config_type=ctype, **{k: (v if v is not None else 0) for k, v in vals.items()}))
+            db.add(ThresholdConfig(config_type=ctype, **{k: r.get(k) for k in keys if k in r}))
     await db.commit()
     result = await db.execute(select(ThresholdConfig))
     return [ThresholdConfigResponse.model_validate(c) for c in result.scalars().all()]

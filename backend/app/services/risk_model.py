@@ -39,11 +39,36 @@ class MortalityRiskService:
     }
 
     @classmethod
+    def thresholds_from_config(cls, rows) -> dict:
+        """Map ThresholdConfig rows (max-per-category from the Admin Panel)
+        onto the thermal cutoffs the scorer uses.
+
+        Admin stores: heat_index.low_threshold = max HI for Low, so Moderate
+        begins where Low ends, High where Moderate ends, Severe where High ends.
+        Rows with missing/zero values fall back to DEFAULT_COEFFICIENTS."""
+        overrides = {}
+        by_type = {getattr(r, "config_type", None): r for r in rows}
+        for ctype, prefix in (("heat_index", "hi"), ("wbgt", "wbgt")):
+            row = by_type.get(ctype)
+            if not row:
+                continue
+            for admin_field, key in (
+                ("low_threshold", f"{prefix}_threshold_moderate"),
+                ("moderate_threshold", f"{prefix}_threshold_high"),
+                ("high_threshold", f"{prefix}_threshold_severe"),
+            ):
+                v = getattr(row, admin_field, None)
+                if v is not None and v > 0:
+                    overrides[key] = float(v)
+        return overrides
+
+    @classmethod
     def calculate_risk(cls, heat_index: float, wbgt: float, elderly_percent: float, outdoor_worker_density: float,
                        temperature_c: float | None = None, humidity: float | None = None,
                        wind_speed: float = 5.0, solar_radiation: float = 500.0,
-                       total_population: int | None = None):
-        base_risk = cls._base_risk_from_thermal(heat_index, wbgt)
+                       total_population: int | None = None,
+                       thresholds: dict | None = None):
+        base_risk = cls._base_risk_from_thermal(heat_index, wbgt, thresholds)
         demographic_multiplier = 1 + (elderly_percent / 100 * cls.DEFAULT_COEFFICIENTS["elderly_weight"]) + (
             outdoor_worker_density * cls.DEFAULT_COEFFICIENTS["outdoor_worker_weight"]
         )
@@ -72,20 +97,27 @@ class MortalityRiskService:
             "ml_model_path": cls.MODEL_PATH,
         }
 
-    @staticmethod
-    def _base_risk_from_thermal(heat_index: float, wbgt: float):
+    @classmethod
+    def _base_risk_from_thermal(cls, heat_index: float, wbgt: float, thresholds: dict | None = None):
+        t = {**cls.DEFAULT_COEFFICIENTS, **(thresholds or {})}
         if heat_index is None and wbgt is None:
             return 10
+        hi_mod = t["hi_threshold_moderate"]
+        hi_high = t["hi_threshold_high"]
+        hi_sev = t["hi_threshold_severe"]
+        wb_mod = t["wbgt_threshold_moderate"]
+        wb_high = t["wbgt_threshold_high"]
+        wb_sev = t["wbgt_threshold_severe"]
         hi_risk = 10
         wb_risk = 10
         if heat_index:
-            if heat_index >= 41: hi_risk = 65 + (heat_index - 41) * 1.5
-            elif heat_index >= 32: hi_risk = 40 + (heat_index - 32) * 2.78
-            elif heat_index >= 27: hi_risk = 25 + (heat_index - 27) * 3.0
+            if heat_index >= hi_sev: hi_risk = 65 + (heat_index - hi_sev) * 1.5
+            elif heat_index >= hi_high: hi_risk = 40 + (heat_index - hi_high) * 2.78
+            elif heat_index >= hi_mod: hi_risk = 25 + (heat_index - hi_mod) * 3.0
         if wbgt:
-            if wbgt >= 31: wb_risk = 65 + (wbgt - 31) * 2.0
-            elif wbgt >= 28: wb_risk = 40 + (wbgt - 28) * 3.33
-            elif wbgt >= 25: wb_risk = 25 + (wbgt - 25) * 3.0
+            if wbgt >= wb_sev: wb_risk = 65 + (wbgt - wb_sev) * 2.0
+            elif wbgt >= wb_high: wb_risk = 40 + (wbgt - wb_high) * 3.33
+            elif wbgt >= wb_mod: wb_risk = 25 + (wbgt - wb_mod) * 3.0
         return max(hi_risk, wb_risk)
 
     @staticmethod

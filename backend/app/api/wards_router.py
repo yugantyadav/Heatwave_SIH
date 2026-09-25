@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc
 from app.db.session import get_db
-from app.models import Ward, RiskScore, WeatherReading, Alert, ThresholdConfig, AdvisoryTemplate
-from app.schemas import WardResponse, WardListResponse, WardGeoJSONResponse, RiskScoreResponse, RiskMapResponse, WeatherReadingResponse, WeatherForecastResponse, AlertTriggerRequest, AlertResponse, AlertLogResponse, ThresholdConfigResponse, AdvisoryTemplateResponse, HealthResponse
-from typing import List, Optional, Dict, Any
+from app.models import Ward, RiskScore
+from app.schemas import WardResponse, WardListResponse, WardGeoJSONResponse, HealthResponse
 
 router = APIRouter()
+
+@router.get("/health", response_model=HealthResponse)
+async def health():
+    return HealthResponse(status="healthy", service="heatwave-ews")
 
 @router.get("/", response_model=WardListResponse)
 async def get_wards(db: AsyncSession = Depends(get_db)):
@@ -73,93 +76,3 @@ async def get_ward(ward_code: str, db: AsyncSession = Depends(get_db)):
     if not ward:
         raise HTTPException(status_code=404, detail="Ward not found")
     return WardResponse.model_validate(ward)
-
-@router.get("/risk/wards", response_model=RiskMapResponse)
-async def get_ward_risks(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(RiskScore).order_by(desc(RiskScore.created_at)))
-    latest = {}
-    for r in result.scalars().all():
-        latest.setdefault(r.ward_code, r)
-    risks = sorted(latest.values(), key=lambda r: r.ward_code)
-    return RiskMapResponse(wards=[RiskScoreResponse.model_validate(r) for r in risks])
-
-@router.get("/risk/wards/{ward_code}", response_model=RiskScoreResponse)
-async def get_ward_risk(ward_code: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(RiskScore).where(RiskScore.ward_code == ward_code).order_by(desc(RiskScore.created_at)).limit(1))
-    risk = result.scalar_one_or_none()
-    if not risk:
-        raise HTTPException(status_code=404, detail="Risk score not found")
-    return RiskScoreResponse.model_validate(risk)
-
-@router.get("/weather/wards/{ward_code}/current", response_model=WeatherReadingResponse)
-async def get_current_weather(ward_code: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(WeatherReading).where(WeatherReading.ward_code == ward_code).order_by(desc(WeatherReading.recorded_at)).limit(1)
-    )
-    reading = result.scalar_one_or_none()
-    if not reading:
-        raise HTTPException(status_code=404, detail="Weather reading not found")
-    return WeatherReadingResponse.model_validate(reading)
-
-@router.get("/weather/wards/{ward_code}/forecast", response_model=WeatherForecastResponse)
-async def get_forecast(ward_code: str, db: AsyncSession = Depends(get_db)):
-    import os
-
-    from app.services.weather import daily_heat_index_forecast
-
-    result = await db.execute(
-        select(WeatherReading).where(WeatherReading.ward_code == ward_code).order_by(desc(WeatherReading.recorded_at))
-    )
-    readings = result.scalars().all()
-    current = readings[0] if readings else None
-
-    forecast = []
-    try:
-        from app.services.weather import daily_heat_index_forecast
-
-        fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
-        forecast = daily_heat_index_forecast(fc_path)
-    except Exception:
-        forecast = []
-    return WeatherForecastResponse(
-        ward_code=ward_code,
-        current=WeatherReadingResponse.model_validate(current) if current else None,
-        forecast=forecast
-    )
-
-@router.post("/alerts/trigger", response_model=AlertResponse)
-async def trigger_alert(request: AlertTriggerRequest, db: AsyncSession = Depends(get_db)):
-    alert = Alert(
-        ward_code=request.ward_code,
-        alert_channel=request.channel,
-        message=request.message,
-        triggered_by=request.risk_category,
-        alert_status="pending",
-        external_id=f"demo_{request.ward_code}_{request.risk_category}"
-    )
-    db.add(alert)
-    await db.commit()
-    await db.refresh(alert)
-    return AlertResponse.model_validate(alert)
-
-@router.get("/alerts/", response_model=AlertLogResponse)
-async def get_alerts(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Alert).order_by(desc(Alert.sent_at)))
-    alerts = result.scalars().all()
-    return AlertLogResponse(alerts=[AlertResponse.model_validate(a) for a in alerts])
-
-@router.get("/config/thresholds", response_model=List[ThresholdConfigResponse])
-async def get_thresholds(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(ThresholdConfig))
-    configs = result.scalars().all()
-    return [ThresholdConfigResponse.model_validate(c) for c in configs]
-
-@router.get("/config/advisories", response_model=List[AdvisoryTemplateResponse])
-async def get_advisories(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(AdvisoryTemplate))
-    templates = result.scalars().all()
-    return [AdvisoryTemplateResponse.model_validate(t) for t in templates]
-
-@router.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(status="healthy", service="heatwave-ews")

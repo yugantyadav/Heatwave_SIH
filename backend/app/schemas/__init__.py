@@ -113,10 +113,10 @@ class AlertLogResponse(BaseModel):
 class ThresholdConfigBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     config_type: str
-    low_threshold: float
-    moderate_threshold: float
-    high_threshold: float
-    severe_threshold: float
+    low_threshold: Optional[float] = None
+    moderate_threshold: Optional[float] = None
+    high_threshold: Optional[float] = None
+    severe_threshold: Optional[float] = None
 
 class ThresholdConfigResponse(ThresholdConfigBase):
     id: int

@@ -16,7 +16,9 @@ class WeatherService:
             "forecast_days": forecast_days,
         }
         async with aiohttp.ClientSession() as session:
-            async with session.get(cls.BASE_URL, params=params) as resp:
+            async with session.get(cls.BASE_URL, params=params,
+                                   timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                resp.raise_for_status()
                 return await resp.json()
 
     @classmethod
@@ -25,7 +27,7 @@ class WeatherService:
         return data
 
 
-def daily_heat_index_forecast(forecast_path: str) -> list:
+def daily_heat_index_from_hourly(hourly: dict) -> list:
     """Build a 5-day outlook from HOURLY temp+humidity pairs.
 
     Each hour's Heat Index is computed from that same hour's temperature
@@ -34,13 +36,8 @@ def daily_heat_index_forecast(forecast_path: str) -> list:
     humidity instead would inflate HI (e.g. afternoon heat + monsoon
     night humidity) — this was the pre-fix bug.
     """
-    import json
-
     from app.services.thermal_index import ThermalIndexService
 
-    with open(forecast_path) as f:
-        fc = json.load(f)
-    hourly = fc.get("hourly", {})
     times = hourly.get("time", [])
     temps = hourly.get("temperature_2m", [])
     rhs = hourly.get("relative_humidity_2m", [])
@@ -61,3 +58,29 @@ def daily_heat_index_forecast(forecast_path: str) -> list:
             slot["heat_index"] = hi
             slot["wbgt"] = th.get("wbgt")
     return sorted(by_day.values(), key=lambda d: d["date"])[:5]
+
+
+def daily_heat_index_forecast(forecast_path: str) -> list:
+    import json
+
+    with open(forecast_path) as f:
+        fc = json.load(f)
+    return daily_heat_index_from_hourly(fc.get("hourly", {}))
+
+
+def forecast_file_is_fresh(forecast_path: str) -> bool:
+    """True when the bundled forecast file still extends into the future
+    (i.e. it was written recently enough to cover today)."""
+    import json
+    from datetime import datetime
+
+    try:
+        with open(forecast_path) as f:
+            fc = json.load(f)
+        times = fc.get("hourly", {}).get("time", [])
+        if not times:
+            return False
+        last = datetime.fromisoformat(str(times[-1]))
+        return last >= datetime.now()
+    except Exception:
+        return False

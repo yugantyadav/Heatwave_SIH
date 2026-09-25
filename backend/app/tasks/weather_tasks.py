@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.config import settings
 from app.db.session import Base, AsyncSessionLocal
-from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading
+from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
 from app.services.risk_model import MortalityRiskService
 from app.services.thermal_index import ThermalIndexService
 from app.tasks.celery_app import celery_app
@@ -31,35 +31,71 @@ def _engine():
     return create_async_engine(settings.DATABASE_URL, echo=False)
 
 
+def _pick_current_hour(hourly: dict) -> int:
+    """Index of the hourly slot closest to *now* (never a future day)."""
+    from datetime import datetime
+
+    times = hourly.get("time") or []
+    if not times:
+        return 0
+    now = datetime.now()
+    best, best_delta = 0, None
+    for i, ts in enumerate(times[:96]):  # only scan the next/few days we ship
+        try:
+            dt = datetime.fromisoformat(str(ts))
+        except ValueError:
+            continue
+        delta = abs((dt - now).total_seconds())
+        if best_delta is None or delta < best_delta:
+            best, best_delta = i, delta
+    return best
+
+
 async def _refresh_async():
     engine = _engine()
     params = {
         "latitude": MUMBAI_LAT,
         "longitude": MUMBAI_LON,
         "hourly": "temperature_2m,relative_humidity_2m,precipitation,weathercode",
+        "daily": "temperature_2m_max,temperature_2m_min,weathercode",
+        "current": "temperature_2m,relative_humidity_2m,precipitation,weather_code",
         "timezone": "Asia/Kolkata",
         "forecast_days": 5,
     }
+    fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
     try:
         async with aiohttp.ClientSession() as s:
             async with s.get("https://api.open-meteo.com/v1/forecast", params=params, timeout=20) as resp:
                 data = await resp.json()
-        hourly = data.get("hourly", {})
-        idx = -1
-        t = float(hourly["temperature_2m"][idx])
-        rh = float(hourly["relative_humidity_2m"][idx])
-        pr = float(hourly.get("precipitation", [0])[-1])
-        wc = int(hourly.get("weathercode", [0])[-1])
+        # Persist the fresh forecast so /api/weather/.../forecast never serves
+        # a stale bundled file (atomic write: tmp + replace).
+        tmp_path = fc_path + ".tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(data, f)
+        os.replace(tmp_path, fc_path)
+        cur = data.get("current") or {}
+        if cur.get("temperature_2m") is not None:
+            t = float(cur["temperature_2m"])
+            rh = float(cur.get("relative_humidity_2m") or 0)
+            pr = float(cur.get("precipitation") or 0)
+            wc = int(cur.get("weather_code") or cur.get("weathercode") or 0)
+        else:
+            hourly = data.get("hourly", {})
+            idx = _pick_current_hour(hourly)
+            t = float(hourly["temperature_2m"][idx])
+            rh = float(hourly["relative_humidity_2m"][idx])
+            pr = float(hourly.get("precipitation", [0])[idx])
+            wc = int(hourly.get("weathercode", [0])[idx])
         source = "open-meteo"
     except Exception:
-        fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
         with open(fc_path) as f:
             fc = json.load(f)
         h = fc["hourly"]
-        t = float(h["temperature_2m"][-1])
-        rh = float(h["relative_humidity_2m"][-1])
-        pr = float(h["precipitation"][-1])
-        wc = int(h["weathercode"][-1])
+        idx = _pick_current_hour(h)
+        t = float(h["temperature_2m"][idx])
+        rh = float(h["relative_humidity_2m"][idx])
+        pr = float(h["precipitation"][idx])
+        wc = int(h["weathercode"][idx])
         source = "bundled-fallback"
     th = ThermalIndexService.calculate(t, rh)
     async with engine.begin() as conn:
@@ -85,6 +121,9 @@ async def _compute_async():
         await conn.run_sync(Base.metadata.create_all)
     async with AsyncSessionLocal() as session:
         wards = (await session.execute(select(Ward))).scalars().all()
+        # Admin-panel thresholds override the model's default HI/WBGT cutoffs.
+        cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
+        thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
         n = 0
         for w in wards:
             wr = (await session.execute(
@@ -98,6 +137,7 @@ async def _compute_async():
                 outdoor_worker_density=w.outdoor_worker_density or 0.5,
                 temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
                 total_population=w.total_population,
+                thresholds=thresholds,
             )
             session.add(RiskScore(
                 ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),

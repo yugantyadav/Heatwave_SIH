@@ -31,7 +31,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.db.session import Base
-from app.models import Ward, WeatherReading, RiskScore
+from app.models import Ward, WeatherReading, RiskScore, ThresholdConfig
 from app.core.config import settings
 from app.services.risk_model import MortalityRiskService
 
@@ -83,16 +83,27 @@ def thermal(t_c: float, rh: float):
 
 
 def load_current_and_daily():
+    from datetime import datetime
+
     with open(FORECAST_JSON) as f:
         fc = json.load(f)
     hourly = fc["hourly"]
-    n = len(hourly["time"])
-    # Latest hour as current conditions for every ward (city-scale forecast).
+    # Hour closest to *now* — not the last forecast hour (which is days ahead).
+    now = datetime.now()
+    idx, best = 0, None
+    for i, ts in enumerate(hourly["time"][:96]):
+        try:
+            dt = datetime.fromisoformat(str(ts))
+        except ValueError:
+            continue
+        d = abs((dt - now).total_seconds())
+        if best is None or d < best:
+            idx, best = i, d
     cur = {
-        "temperature_2m": float(hourly["temperature_2m"][-1]),
-        "relative_humidity_2m": float(hourly["relative_humidity_2m"][-1]),
-        "precipitation": float(hourly["precipitation"][-1]),
-        "weathercode": int(hourly["weathercode"][-1]),
+        "temperature_2m": float(hourly["temperature_2m"][idx]),
+        "relative_humidity_2m": float(hourly["relative_humidity_2m"][idx]),
+        "precipitation": float(hourly["precipitation"][idx]),
+        "weathercode": int(hourly["weathercode"][idx]),
     }
     daily = fc.get("daily", {})
     days = []
@@ -116,6 +127,8 @@ async def ingest(limit: int | None = None):
         wards = result.scalars().all()
         if limit:
             wards = wards[:limit]
+        cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
+        thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
         for w in wards:
             reading = WeatherReading(
                 ward_code=w.ward_code,
@@ -133,9 +146,11 @@ async def ingest(limit: int | None = None):
                 elderly_percent=w.elderly_percent or 8.57,
                 outdoor_worker_density=w.outdoor_worker_density or 0.5,
                 total_population=w.total_population,
+                thresholds=thresholds,
             )
             existing_risk = await session.execute(
                 select(RiskScore).where(RiskScore.ward_code == w.ward_code)
+                .order_by(RiskScore.id.desc()).limit(1)
             )
             existing = existing_risk.scalar_one_or_none()
             if existing:

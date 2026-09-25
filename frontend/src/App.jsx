@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import HeatMap from "./components/HeatMap";
 import RiskLegend from "./components/RiskLegend";
 import WardDetailPanel from "./components/WardDetailPanel";
-import ForecastChart from "./components/ForecastChart";
 import ZoneBrowser from "./components/ZoneBrowser";
-import AdminPanel from "./components/admin/AdminPanel";
 import Spinner from "./components/Spinner";
 import ErrorBanner from "./components/ErrorBanner";
 import { fetchWard, fetchWardRisk, fetchWards, fetchAlerts } from "./services/api";
 import { getRiskRank, RISK_ORDER, normalizeRiskCategory, getRiskColor } from "./utils/riskConfig";
 import "./App.css";
+
+// recharts (ForecastChart) and the admin workspace only render on demand —
+// lazy-loading them keeps the initial dashboard bundle under the 500 kB cap.
+const ForecastChart = lazy(() => import("./components/ForecastChart"));
+const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 
 /**
  * App
@@ -296,7 +299,9 @@ export default function App() {
 
           <aside className="sidebar">
             <WardDetailPanel selectedWard={selectedWard} detail={wardDetail} wardMeta={wardMeta} isLoading={isWardDetailLoading} error={wardDetailError} onRetry={() => selectedWard && handleWardSelect({ ...selectedWard })} />
-            <ForecastChart selectedWard={selectedWard} />
+            <Suspense fallback={<div className="map-status"><Spinner label="Loading forecast…" /></div>}>
+              <ForecastChart selectedWard={selectedWard} />
+            </Suspense>
             <ZoneBrowser wards={filteredWards} selectedWardId={selectedWard?.properties.id} onWardSelect={handleWardSelect} />
             <RiskLegend />
           </aside>
@@ -309,7 +314,9 @@ export default function App() {
             <div><p className="eyebrow">Configuration workspace</p><h2>Heat action controls</h2><p>Set the thresholds and public guidance that drive ward-level alerts.</p></div>
             <span className="admin-badge">Admin access</span>
           </div>
-          <AdminPanel />
+          <Suspense fallback={<div className="map-status"><Spinner label="Loading admin panel…" /></div>}>
+            <AdminPanel />
+          </Suspense>
         </main>
       )}
     </div>
