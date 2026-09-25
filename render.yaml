@@ -1,6 +1,21 @@
-# Render blueprint. The single-image Dockerfile only runs the web process, so
-# the Celery worker and beat scheduler need their own services or the
-# scheduled refresh/compute/alert jobs never run in production.
+# Render blueprint — $0 tier.
+#
+# Only two services are deployed:
+#   * web  — the FastAPI app, which also serves the built frontend
+#   * Postgres — the datastore
+#
+# Deliberately absent: the Celery background worker and Redis. Render charges
+# for background workers, and the broker was never used by the jobs
+# themselves (refresh/compute/trigger are plain async functions). Scheduling
+# is covered by the boot pipeline plus a staleness check on the read path, so
+# the app still self-refreshes with no worker process.
+#
+# Free-tier behaviour to be aware of:
+#   * the web service spins down after ~15 min idle; the next request pays a
+#     30-60s cold start, after which the boot pipeline has already refreshed
+#     the data
+#   * free Postgres is deleted 30 days after creation; the boot-time seed
+#     rebuilds wards/thresholds/advisories, so the map recovers by itself
 services:
   - type: web
     name: heatwave-api
@@ -8,15 +23,11 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: heatwave-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: heatwave-redis
           property: connectionString
       - key: ENVIRONMENT
         value: production
@@ -24,58 +35,9 @@ services:
         value: "6"
       - key: ALERT_COOLDOWN_HOURS
         value: "6"
-
-  - type: worker
-    name: heatwave-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: celery -A app.tasks.celery_app worker --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: heatwave-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: heatwave-redis
-          property: connectionString
-      - key: ENVIRONMENT
-        value: production
-      - key: FORECAST_REFRESH_HOURS
-        value: "6"
-      - key: ALERT_COOLDOWN_HOURS
-        value: "6"
-
-  - type: worker
-    name: heatwave-beat
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: heatwave-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: heatwave-redis
-          property: connectionString
-      - key: ENVIRONMENT
-        value: production
-      - key: FORECAST_REFRESH_HOURS
-        value: "6"
-      - key: ALERT_COOLDOWN_HOURS
-        value: "6"
-
-  - type: redis
-    name: heatwave-redis
-    plan: starter
-    ipAllowList: []
+      - key: DATA_MAX_AGE_MINUTES
+        value: "30"
 
 databases:
   - name: heatwave-db
-    plan: starter
+    plan: free

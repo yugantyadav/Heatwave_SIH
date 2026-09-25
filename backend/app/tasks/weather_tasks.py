@@ -21,6 +21,7 @@ from app.db.queries import latest_alert_per_ward_category, latest_risk_per_ward
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
 from app.services.alerting import ALERT_CATEGORIES, external_id_for, should_alert, utcnow
 from app.services.risk_model import MortalityRiskService
+from app.services.seeding import ensure_seeded
 from app.services.thermal_index import ThermalIndexService
 from app.tasks.celery_app import celery_app
 
@@ -30,7 +31,7 @@ DB_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "
 
 
 def _engine():
-    return create_async_engine(settings.DATABASE_URL, echo=False)
+    return create_async_engine(settings.ASYNC_DATABASE_URL, echo=False)
 
 
 def _pick_current_hour(hourly: dict) -> int:
@@ -219,20 +220,41 @@ async def _trigger_async():
 
 
 async def _pipeline_async():
-    """refresh -> compute -> trigger, in order.
+    """seed -> refresh -> compute -> trigger, in order.
 
-    Scheduling these independently let compute read the previous refresh's
-    weather (up to a full cycle stale) because both fired at the same instant.
-    Running them in sequence guarantees risk is scored from fresh weather and
-    alerts follow the scores they were meant to act on.
+    Seeding comes first because a fresh deployment (or an expired free
+    Postgres) has the tables but no rows: without wards the map renders
+    nothing, and the risk pass would score zero wards.
+
+    refresh/compute/trigger used to be three independent beat entries
+    sharing one period, so they fired at the same instant and compute could
+    read the previous refresh's weather. Running them in sequence guarantees
+    risk is scored from fresh weather and alerts follow the scores they were
+    meant to act on.
     """
     results = {}
-    for name, step in (("refresh", _refresh_async), ("compute", _compute_async), ("trigger", _trigger_async)):
+    for name, step in (
+        ("seed", _seed_async),
+        ("refresh", _refresh_async),
+        ("compute", _compute_async),
+        ("trigger", _trigger_async),
+    ):
         try:
             results[name] = await step()
         except Exception as exc:  # one broken step must not starve the others
             results[name] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return results
+
+
+async def _seed_async():
+    engine = _engine()
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as session:
+            return await ensure_seeded(session)
+    finally:
+        await engine.dispose()
 
 
 @celery_app.task(name="tasks.weather_tasks.pipeline")

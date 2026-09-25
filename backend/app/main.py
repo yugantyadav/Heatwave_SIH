@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from pathlib import Path
 import asyncio
 from sqlalchemy import text
 from app.db.session import Base, engine
@@ -72,3 +75,29 @@ async def health():
 @app.get("/api/health")
 async def api_health():
     return {"status": "healthy", "service": "heatwave-ews"}
+
+
+# ---------------------------------------------------------------------------
+# Static SPA (production only)
+# ---------------------------------------------------------------------------
+# The Docker build copies the Vite output to /app/static and the API serves
+# it, so the whole app is one service on one URL. Registered last so every
+# /api route above wins. Locally there is no static/ dir, so this is inert
+# and the Vite dev server keeps serving the UI.
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+if STATIC_DIR.is_dir():
+    _assets = STATIC_DIR / "assets"
+    if _assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa(full_path: str):
+        """Serve a real file when it exists, else index.html for client routes."""
+        if full_path:
+            root = STATIC_DIR.resolve()
+            candidate = (root / full_path).resolve()
+            # Reject anything that escapes the static root.
+            if candidate.is_file() and root in candidate.parents:
+                return FileResponse(candidate)
+        return FileResponse(STATIC_DIR / "index.html")

@@ -114,7 +114,7 @@ def load_current_and_daily():
 
 
 async def ingest(limit: int | None = None):
-    engine = create_async_engine(settings.DATABASE_URL)
+    engine = create_async_engine(settings.ASYNC_DATABASE_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

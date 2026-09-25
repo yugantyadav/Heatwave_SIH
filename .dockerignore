@@ -1,0 +1,21 @@
+# Never ship the local .env files: backend/.env points at a macOS path, and
+# frontend/.env would bake VITE_API_BASE_URL=http://localhost:8000 and
+# VITE_USE_MOCK_DATA into the production bundle. The Dockerfile sets the
+# frontend vars explicitly instead.
+.env
+backend/.env
+frontend/.env
+**/.env
+**/.env.*
+
+# Build noise
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.venv
+**/celerybeat-schedule*
+
+# Local database (the trained model under ml/models/ IS shipped on purpose —
+# the anomaly blend changes risk scores and must match local behaviour)
+*.db

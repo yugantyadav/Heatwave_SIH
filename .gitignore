@@ -46,3 +46,5 @@ Thumbs.db
 
 # Logs
 *.log
+# built SPA served by FastAPI (Docker copies it, never committed)
+backend/static/
