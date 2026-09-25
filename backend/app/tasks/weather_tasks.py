@@ -9,15 +9,15 @@ Uses synchronous SQLite (Celery worker process), no async engine needed.
 import asyncio
 import json
 import os
-from contextlib import asynccontextmanager
 
 import aiohttp
 from sqlalchemy import desc, select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
 from app.db.session import Base, AsyncSessionLocal
-from app.db.queries import latest_risk_per_ward
+from app.db.queries import latest_alert_per_ward_category, latest_risk_per_ward
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
 from app.services.alerting import ALERT_CATEGORIES, external_id_for, should_alert, utcnow
 from app.services.risk_model import MortalityRiskService
@@ -65,6 +65,9 @@ async def _refresh_async():
         "forecast_days": 5,
     }
     fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
+    # The data/ dir is absent in a fresh image unless the image copies it, so
+    # never assume it is there.
+    os.makedirs(os.path.dirname(fc_path), exist_ok=True)
     try:
         async with aiohttp.ClientSession() as s:
             async with s.get("https://api.open-meteo.com/v1/forecast", params=params, timeout=20) as resp:
@@ -174,12 +177,13 @@ async def _trigger_async():
         async with AsyncSessionLocal() as session:
             advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
             risks = (await session.execute(latest_risk_per_ward())).scalars().all()
-            existing = (await session.execute(select(Alert))).scalars().all()
-            last_alert_at: dict = {}
-            for a in existing:
-                key = (a.ward_code, a.triggered_by)
-                if a.sent_at and (key not in last_alert_at or a.sent_at > last_alert_at[key]):
-                    last_alert_at[key] = a.sent_at
+            # Only the newest alert per (ward, category) is needed — the log is
+            # append-only, so reading it whole would grow every hourly run.
+            last_alert_at = {
+                (a.ward_code, a.triggered_by): a.sent_at
+                for a in (await session.execute(latest_alert_per_ward_category())).scalars().all()
+                if a.sent_at
+            }
             created = 0
             for r in risks:
                 if r.risk_category not in ALERT_CATEGORIES:
@@ -195,14 +199,45 @@ async def _trigger_async():
                     continue
                 tmpl = advisories.get(r.risk_category)
                 msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
-                session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
-                                  triggered_by=r.risk_category, alert_status="sandbox",
-                                  external_id=external_id))
+                # external_id is UNIQUE, so a concurrent worker can still win the
+                # race between the check above and this insert. Each insert gets
+                # its own SAVEPOINT so losing that race costs one alert instead
+                # of aborting every alert queued in this run.
+                try:
+                    async with session.begin_nested():
+                        session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
+                                          triggered_by=r.risk_category, alert_status="sandbox",
+                                          external_id=external_id))
+                        await session.flush()
+                except IntegrityError:
+                    continue
                 created += 1
             await session.commit()
         return {"status": "alerts triggered", "created": created}
     finally:
         await engine.dispose()
+
+
+async def _pipeline_async():
+    """refresh -> compute -> trigger, in order.
+
+    Scheduling these independently let compute read the previous refresh's
+    weather (up to a full cycle stale) because both fired at the same instant.
+    Running them in sequence guarantees risk is scored from fresh weather and
+    alerts follow the scores they were meant to act on.
+    """
+    results = {}
+    for name, step in (("refresh", _refresh_async), ("compute", _compute_async), ("trigger", _trigger_async)):
+        try:
+            results[name] = await step()
+        except Exception as exc:  # one broken step must not starve the others
+            results[name] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return results
+
+
+@celery_app.task(name="tasks.weather_tasks.pipeline")
+def pipeline():
+    return asyncio.run(_pipeline_async())
 
 
 @celery_app.task(name="tasks.weather_tasks.refresh")

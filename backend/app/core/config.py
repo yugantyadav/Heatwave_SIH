@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     FORECAST_REFRESH_HOURS: int = 6
     ALERT_COOLDOWN_HOURS: int = 6
     MANUAL_ALERT_WINDOW_SECONDS: int = 300
+    REDIS_URL: str = "redis://localhost:6379/0"
     OPEN_METEO_API_KEY: str = ""
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""

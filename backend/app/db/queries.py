@@ -6,10 +6,13 @@ into Python and keeping the first row per ward. That table is append-only
 (+one row per ward per scheduled run), so the map endpoint was re-reading
 the entire history on every dashboard load. The window function below does
 the same reduction in the database.
+
+``latest_alert_per_ward_category`` does the same for the hourly alert task,
+which only needs "when did this ward last alert at this level".
 """
 from sqlalchemy import func, select
 
-from app.models import RiskScore
+from app.models import Alert, RiskScore
 
 
 def latest_risk_per_ward():
@@ -28,5 +31,21 @@ def latest_risk_per_ward():
     return (
         select(RiskScore)
         .join(ranked, RiskScore.id == ranked.c.id)
+        .where(ranked.c.rn == 1)
+    )
+
+
+def latest_alert_per_ward_category():
+    """SELECT of the newest Alert row for each (ward_code, triggered_by)."""
+    ranked = select(
+        Alert.id.label("id"),
+        func.row_number().over(
+            partition_by=(Alert.ward_code, Alert.triggered_by),
+            order_by=(Alert.sent_at.desc(), Alert.id.desc()),
+        ).label("rn"),
+    ).subquery()
+    return (
+        select(Alert)
+        .join(ranked, Alert.id == ranked.c.id)
         .where(ranked.c.rn == 1)
     )

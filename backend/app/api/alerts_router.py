@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, desc
 from app.core.config import settings
 from app.db.session import get_db
@@ -32,15 +33,29 @@ async def trigger(request: AlertTriggerRequest, db: AsyncSession = Depends(get_d
     )).scalars().first()
     if existing:
         return AlertResponse.model_validate(existing)
-    alert = Alert(
-        ward_code=ward_code,
-        alert_channel=request.channel,
-        message=request.message,
-        triggered_by=category,
-        alert_status="pending",
-        external_id=external_id,
-    )
-    db.add(alert)
+    # external_id is UNIQUE: two simultaneous requests can both pass the check
+    # above. The SAVEPOINT keeps a lost race to a single request instead of
+    # failing the transaction, and the winner's alert is returned to both.
+    try:
+        async with db.begin_nested():
+            alert = Alert(
+                ward_code=ward_code,
+                alert_channel=request.channel,
+                message=request.message,
+                triggered_by=category,
+                alert_status="pending",
+                external_id=external_id,
+            )
+            db.add(alert)
+            await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        winner = (await db.execute(
+            select(Alert).where(Alert.external_id == external_id)
+        )).scalars().first()
+        if winner:
+            return AlertResponse.model_validate(winner)
+        raise HTTPException(status_code=409, detail="Alert could not be created; please retry.")
     await db.commit()
     await db.refresh(alert)
     return AlertResponse.model_validate(alert)

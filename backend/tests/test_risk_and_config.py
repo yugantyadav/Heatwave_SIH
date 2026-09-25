@@ -1,6 +1,4 @@
 """Risk + config routers expose the canonical endpoints; nothing 500s."""
-from datetime import datetime
-
 
 def test_risk_map(client):
     r = client.get("/api/risk/wards")

@@ -3,8 +3,6 @@ double-sends collapsed, but genuine later re-alerts are allowed."""
 import asyncio
 from datetime import datetime, timedelta
 
-import pytest
-
 from app.db.session import AsyncSessionLocal
 from app.models import Alert
 from app.services.alerting import external_id_for, should_alert, utcnow

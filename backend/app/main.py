@@ -2,48 +2,51 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
-from sqlalchemy import create_engine, text
-from app.db.session import Base
+from sqlalchemy import text
+from app.db.session import Base, engine
 from app.core.config import settings
 
-_sync_engine = create_engine(settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "sqlite:///"), echo=False)
+# DDL is issued through the *async* engine via run_sync. The previous sync
+# engine was built from DATABASE_URL, so under a postgresql+asyncpg URL it
+# tried to run DDL on an async driver from sync code and died with
+# MissingGreenlet before the app ever served a request.
+def _create_schema(sync_conn):
+    Base.metadata.create_all(bind=sync_conn)
+    # Belt-and-braces dedup: app-level checks guard triggers, this index stops
+    # racing writers from stacking duplicates. Best-effort — an existing dup
+    # would only warn, never block startup.
+    for ddl in (
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_alerts_external_id ON alerts (external_id)",
+        "CREATE INDEX IF NOT EXISTS ix_risk_scores_ward_created ON risk_scores (ward_code, created_at)",
+    ):
+        try:
+            sync_conn.execute(text(ddl))
+        except Exception:
+            pass
 
-async def _refresh_weather_on_startup():
-    """Best-effort weather + forecast-file refresh when the API boots, so a
-    cold start never serves a stale bundled forecast."""
+async def _bootstrap_pipeline():
+    """Best-effort refresh -> compute -> trigger when the API boots.
+
+    Celery's schedule is a delay, so a cold start used to leave the map with no
+    risk scores (and therefore a blank/optimistic map) until the first period
+    elapsed. Running the ordered pipeline here closes that gap."""
     try:
-        from app.tasks.weather_tasks import _refresh_async
-        await _refresh_async()
+        from app.tasks.weather_tasks import _pipeline_async
+        await _pipeline_async()
     except Exception:
         pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=_sync_engine)
-    # Belt-and-braces dedup: app-level checks guard triggers, this index
-    # stops racing writers from stacking duplicates. Best-effort — an
-    # existing dup would only warn, never block startup.
-    try:
-        with _sync_engine.begin() as conn:
-            conn.execute(text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS ux_alerts_external_id "
-                "ON alerts (external_id)"
-            ))
-            # latest_risk_per_ward() reduces per ward; this keeps that from
-            # degrading as the append-only risk_scores history grows.
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_risk_scores_ward_created "
-                "ON risk_scores (ward_code, created_at)"
-            ))
-    except Exception:
-        pass
-    refresh_task = None
+    async with engine.begin() as conn:
+        await conn.run_sync(_create_schema)
+    bootstrap = None
     if settings.ENVIRONMENT != "test":
-        refresh_task = asyncio.create_task(_refresh_weather_on_startup())
+        bootstrap = asyncio.create_task(_bootstrap_pipeline())
     yield
-    if refresh_task:
-        refresh_task.cancel()
-    _sync_engine.dispose()
+    if bootstrap:
+        bootstrap.cancel()
+    await engine.dispose()
 
 app = FastAPI(title="Heatwave EWS", version="1.0.0", lifespan=lifespan)
 

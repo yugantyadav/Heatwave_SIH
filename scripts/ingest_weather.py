@@ -17,7 +17,6 @@ Usage:
 """
 import argparse
 import asyncio
-import csv
 import json
 import math
 import os

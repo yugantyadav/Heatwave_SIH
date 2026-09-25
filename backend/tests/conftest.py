@@ -14,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.db.session import Base, AsyncSessionLocal
+from app.db.session import AsyncSessionLocal
 from app.models import Ward, ThresholdConfig
 
 

@@ -1,0 +1,81 @@
+# Render blueprint. The single-image Dockerfile only runs the web process, so
+# the Celery worker and beat scheduler need their own services or the
+# scheduled refresh/compute/alert jobs never run in production.
+services:
+  - type: web
+    name: heatwave-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heatwave-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: heatwave-redis
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: FORECAST_REFRESH_HOURS
+        value: "6"
+      - key: ALERT_COOLDOWN_HOURS
+        value: "6"
+
+  - type: worker
+    name: heatwave-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A app.tasks.celery_app worker --loglevel=info
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heatwave-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: heatwave-redis
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: FORECAST_REFRESH_HOURS
+        value: "6"
+      - key: ALERT_COOLDOWN_HOURS
+        value: "6"
+
+  - type: worker
+    name: heatwave-beat
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heatwave-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: heatwave-redis
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: FORECAST_REFRESH_HOURS
+        value: "6"
+      - key: ALERT_COOLDOWN_HOURS
+        value: "6"
+
+  - type: redis
+    name: heatwave-redis
+    plan: starter
+    ipAllowList: []
+
+databases:
+  - name: heatwave-db
+    plan: starter

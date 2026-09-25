@@ -1,7 +1,6 @@
 """Weather: current-hour selection (not the last forecast hour), forecast
 file freshness, and the forecast endpoint."""
 import json
-import os
 from datetime import datetime, timedelta
 
 from app.services.weather import daily_heat_index_from_hourly, forecast_file_is_fresh
