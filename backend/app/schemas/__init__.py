@@ -1,7 +1,24 @@
-from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_validator, PlainSerializer
+from typing import Annotated, Optional, List, Dict, Any
+from datetime import datetime, timezone
 import json
+
+
+def _utc_iso(value):
+    """Render naive datetimes as explicit UTC ISO-8601.
+
+    The ORM defaults (``datetime.utcnow``) produce strings with no offset.
+    Per the ES spec a datetime without an offset is parsed by browsers as
+    *local* time, so a naive UTC stamp rendered in India showed 5h30m early.
+    Emitting a trailing ``Z`` makes the instant unambiguous everywhere.
+    """
+    if isinstance(value, datetime):
+        aware = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+        return aware.astimezone(timezone.utc).isoformat()
+    return value
+
+
+UtcDateTime = Annotated[datetime, PlainSerializer(_utc_iso, return_type=str, when_used="json")]
 
 # Ward Schemas
 class WardBase(BaseModel):
@@ -50,7 +67,7 @@ class RiskScoreResponse(RiskScoreBase):
     elderly_percent: Optional[float] = None
     outdoor_worker_density: Optional[float] = None
     breakdown: Optional[Dict[str, Any]] = None
-    created_at: Optional[datetime] = None
+    created_at: Optional[UtcDateTime] = None
 
     @field_validator("breakdown", mode="before")
     @classmethod
@@ -76,7 +93,7 @@ class WeatherReadingBase(BaseModel):
 
 class WeatherReadingResponse(WeatherReadingBase):
     id: int
-    recorded_at: Optional[datetime] = None
+    recorded_at: Optional[UtcDateTime] = None
 
 class WeatherForecastResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -96,7 +113,7 @@ class AlertResponse(AlertBase):
     id: int
     alert_status: str
     external_id: Optional[str] = None
-    sent_at: Optional[datetime] = None
+    sent_at: Optional[UtcDateTime] = None
 
 class AlertTriggerRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -120,7 +137,7 @@ class ThresholdConfigBase(BaseModel):
 
 class ThresholdConfigResponse(ThresholdConfigBase):
     id: int
-    updated_at: Optional[datetime] = None
+    updated_at: Optional[UtcDateTime] = None
 
 class AdvisoryTemplateBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -94,7 +94,8 @@ async def seed_wards():
                 "total_females": 0,
                 "sc_population": 0,
                 "st_population": 0,
-                "elderly_percent": float(p.get("elderly_percent") or 8.57),
+                # A census cell of 0.0 is a real value, not a missing one.
+                "elderly_percent": float(p["elderly_percent"]) if p.get("elderly_percent") not in (None, "") else 8.57,
                 "outdoor_worker_density": 0.5,
             })
         await session.commit()

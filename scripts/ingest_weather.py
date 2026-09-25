@@ -140,11 +140,14 @@ async def ingest(limit: int | None = None):
                 wbgt=wb,
             )
             session.add(reading)
+            # 0.0 is a real value, not a missing one — only fall back on None.
+            elderly = w.elderly_percent if w.elderly_percent is not None else 8.57
+            workers = w.outdoor_worker_density if w.outdoor_worker_density is not None else 0.5
             risk = MortalityRiskService.calculate_risk(
                 heat_index=hi,
                 wbgt=wb,
-                elderly_percent=w.elderly_percent or 8.57,
-                outdoor_worker_density=w.outdoor_worker_density or 0.5,
+                elderly_percent=elderly,
+                outdoor_worker_density=workers,
                 total_population=w.total_population,
                 thresholds=thresholds,
             )

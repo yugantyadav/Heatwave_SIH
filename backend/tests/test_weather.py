@@ -42,6 +42,26 @@ def test_stale_file_fails(tmp_path):
     assert forecast_file_is_fresh(str(path)) is False
 
 
+def test_partially_lapsed_file_fails(tmp_path):
+    """Regression: checking only the LAST hourly slot reported a file written
+    days ago as fresh, because its final slot was still in the future — the
+    chart then rendered a truncated outlook instead of fetching live."""
+    start = datetime.now().replace(minute=0, second=0, microsecond=0) - timedelta(days=3)
+    path = tmp_path / "fc.json"
+    path.write_text(json.dumps({"hourly": _hourly(5, start=start)}))
+    data = json.loads(path.read_text())
+    last = data["hourly"]["time"][-1]
+    assert datetime.fromisoformat(last) > datetime.now(), "fixture must still end in the future"
+    assert forecast_file_is_fresh(str(path)) is False
+
+
+def test_file_starting_in_the_future_fails(tmp_path):
+    start = datetime.now() + timedelta(days=2)
+    path = tmp_path / "fc.json"
+    path.write_text(json.dumps({"hourly": _hourly(5, start=start)}))
+    assert forecast_file_is_fresh(str(path)) is False
+
+
 def test_missing_file_fails(tmp_path):
     assert forecast_file_is_fresh(str(tmp_path / "nope.json")) is False
 

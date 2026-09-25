@@ -5,7 +5,7 @@ import WardDetailPanel from "./components/WardDetailPanel";
 import ZoneBrowser from "./components/ZoneBrowser";
 import Spinner from "./components/Spinner";
 import ErrorBanner from "./components/ErrorBanner";
-import { fetchWard, fetchWardRisk, fetchWards, fetchAlerts } from "./services/api";
+import { fetchWard, fetchWardRisk, fetchWards, fetchAlerts, formatTimestamp } from "./services/api";
 import { getRiskRank, RISK_ORDER, normalizeRiskCategory, getRiskColor } from "./utils/riskConfig";
 import "./App.css";
 
@@ -13,6 +13,27 @@ import "./App.css";
 // lazy-loading them keeps the initial dashboard bundle under the 500 kB cap.
 const ForecastChart = lazy(() => import("./components/ForecastChart"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
+
+/** e.g. "Friday, 25 September 2026" — derived, so it can never go stale. */
+function formatToday(date) {
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** Honest freshness label driven by when the data actually arrived. */
+function formatSyncLabel(lastUpdatedAt) {
+  if (!lastUpdatedAt) return "Loading live data…";
+  const minutes = Math.floor((Date.now() - lastUpdatedAt) / 60000);
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Updated ${hours} hour${hours === 1 ? "" : "s"} ago`;
+  return `Updated ${Math.floor(hours / 24)} day${hours < 48 ? "" : "s"} ago`;
+}
 
 /**
  * App
@@ -43,6 +64,17 @@ export default function App() {
   const [riskFilter, setRiskFilter] = useState("All");
   const [alerts, setAlerts] = useState(null);
   const [alertsError, setAlertsError] = useState(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Re-render on a timer so the relative "updated ... ago" label stays true.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayLabel = useMemo(() => formatToday(new Date(now)), [now]);
+  const syncLabel = useMemo(() => formatSyncLabel(lastUpdatedAt), [lastUpdatedAt, now]);
 
   useEffect(() => {
     loadWards();
@@ -67,6 +99,7 @@ export default function App() {
     fetchWards()
       .then((data) => {
         setWards(data);
+        setLastUpdatedAt(Date.now());
         const firstWard = [...data.features].sort(
           (a, b) => getRiskRank(b.properties.riskCategory) - getRiskRank(a.properties.riskCategory),
         )[0];
@@ -163,7 +196,7 @@ export default function App() {
         </div>
         <div className="header-status">
           <span className="live-pill"><span className="live-dot" /> Live model</span>
-          <span className="sync-copy">Updated just now</span>
+          <span className="sync-copy">{syncLabel}</span>
         </div>
         <nav className="tab-bar" aria-label="Dashboard sections">
           <button type="button" className={"tab-button" + (activeTab === "dashboard" ? " tab-button-active" : "")} onClick={() => setActiveTab("dashboard")}>
@@ -180,7 +213,7 @@ export default function App() {
           <section className="dashboard-content">
             <div className="page-heading">
               <div>
-                <p className="eyebrow">Mumbai municipal operations · Sunday, 20 September 2026</p>
+                <p className="eyebrow">Mumbai municipal operations · {todayLabel}</p>
                 <h2>Heat risk at a glance</h2>
                 <p className="page-heading-copy">Monitor ward-level thermal stress and act before the afternoon peak.</p>
               </div>
@@ -283,7 +316,7 @@ export default function App() {
                           </div>
                           <p className="alert-message">{alert.message}</p>
                           <time className="alert-time" dateTime={alert.sent_at}>
-                            {alert.sent_at ? new Date(alert.sent_at).toLocaleString() : ""}
+                            {formatTimestamp(alert.sent_at)}
                           </time>
                         </div>
                       </li>

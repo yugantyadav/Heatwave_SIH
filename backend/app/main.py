@@ -29,6 +29,12 @@ async def lifespan(app: FastAPI):
                 "CREATE UNIQUE INDEX IF NOT EXISTS ux_alerts_external_id "
                 "ON alerts (external_id)"
             ))
+            # latest_risk_per_ward() reduces per ward; this keeps that from
+            # degrading as the append-only risk_scores history grows.
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_risk_scores_ward_created "
+                "ON risk_scores (ward_code, created_at)"
+            ))
     except Exception:
         pass
     refresh_task = None

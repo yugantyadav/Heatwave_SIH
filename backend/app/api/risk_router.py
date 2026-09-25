@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.queries import latest_risk_per_ward
 from app.db.session import get_db
 from app.models import RiskScore
 from app.schemas import RiskScoreResponse, RiskMapResponse
@@ -10,11 +11,8 @@ router = APIRouter()
 @router.get("/wards", response_model=RiskMapResponse)
 async def get_all_risks(db: AsyncSession = Depends(get_db)):
     # Latest score per ward (history table keeps every computation).
-    result = await db.execute(select(RiskScore).order_by(desc(RiskScore.created_at)))
-    latest = {}
-    for r in result.scalars().all():
-        latest.setdefault(r.ward_code, r)
-    risks = sorted(latest.values(), key=lambda r: r.ward_code)
+    result = await db.execute(latest_risk_per_ward())
+    risks = sorted(result.scalars().all(), key=lambda r: r.ward_code)
     return RiskMapResponse(wards=[RiskScoreResponse.model_validate(r) for r in risks])
 
 @router.get("/wards/{ward_code}", response_model=RiskScoreResponse)

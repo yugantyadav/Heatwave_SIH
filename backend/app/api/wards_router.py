@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select
+from app.db.queries import latest_risk_per_ward
 from app.db.session import get_db
-from app.models import Ward, RiskScore
+from app.models import Ward
 from app.schemas import WardResponse, WardListResponse, WardGeoJSONResponse, HealthResponse
 
 router = APIRouter()
@@ -27,10 +28,8 @@ async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
 
     result = await db.execute(select(Ward))
     wards = result.scalars().all()
-    risk_result = await db.execute(select(RiskScore).order_by(desc(RiskScore.created_at)))
-    latest_by_ward = {}
-    for r in risk_result.scalars().all():
-        latest_by_ward.setdefault(r.ward_code, r.risk_category)
+    risk_result = await db.execute(latest_risk_per_ward())
+    latest_by_ward = {r.ward_code: r.risk_category for r in risk_result.scalars().all()}
 
     geo_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "wards_geojson.json")
     geom_by_code = {}

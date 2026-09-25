@@ -17,7 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.config import settings
 from app.db.session import Base, AsyncSessionLocal
+from app.db.queries import latest_risk_per_ward
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
+from app.services.alerting import ALERT_CATEGORIES, external_id_for, should_alert, utcnow
 from app.services.risk_model import MortalityRiskService
 from app.services.thermal_index import ThermalIndexService
 from app.tasks.celery_app import celery_app
@@ -98,90 +100,109 @@ async def _refresh_async():
         wc = int(h["weathercode"][idx])
         source = "bundled-fallback"
     th = ThermalIndexService.calculate(t, rh)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    async with AsyncSessionLocal() as session:
-        wards = (await session.execute(select(Ward))).scalars().all()
-        for w in wards:
-            session.add(WeatherReading(
-                ward_code=w.ward_code, temperature_2m=t,
-                relative_humidity_2m=rh, precipitation=pr, weathercode=wc,
-                heat_index=th.get("heat_index"), wbgt=th.get("wbgt"),
-            ))
-        await session.commit()
-        n = len(wards)
-    await engine.dispose()
-    return {"status": "weather forecast refreshed", "wards": n, "source": source,
-            "temperature_2m": t, "heat_index": th.get("heat_index"), "wbgt": th.get("wbgt")}
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as session:
+            wards = (await session.execute(select(Ward))).scalars().all()
+            for w in wards:
+                session.add(WeatherReading(
+                    ward_code=w.ward_code, temperature_2m=t,
+                    relative_humidity_2m=rh, precipitation=pr, weathercode=wc,
+                    heat_index=th.get("heat_index"), wbgt=th.get("wbgt"),
+                ))
+            await session.commit()
+            n = len(wards)
+        return {"status": "weather forecast refreshed", "wards": n, "source": source,
+                "temperature_2m": t, "heat_index": th.get("heat_index"), "wbgt": th.get("wbgt")}
+    finally:
+        await engine.dispose()
 
 
 async def _compute_async():
     engine = _engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    async with AsyncSessionLocal() as session:
-        wards = (await session.execute(select(Ward))).scalars().all()
-        # Admin-panel thresholds override the model's default HI/WBGT cutoffs.
-        cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
-        thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
-        n = 0
-        for w in wards:
-            wr = (await session.execute(
-                select(WeatherReading).where(WeatherReading.ward_code == w.ward_code)
-                .order_by(desc(WeatherReading.recorded_at)).limit(1))).scalar_one_or_none()
-            if not wr:
-                continue
-            risk = MortalityRiskService.calculate_risk(
-                heat_index=wr.heat_index or 35.0, wbgt=wr.wbgt or 28.0,
-                elderly_percent=w.elderly_percent or 8.57,
-                outdoor_worker_density=w.outdoor_worker_density or 0.5,
-                temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
-                total_population=w.total_population,
-                thresholds=thresholds,
-            )
-            session.add(RiskScore(
-                ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),
-                final_score=risk["final_score"], heat_index=wr.heat_index, wbgt=wr.wbgt,
-                elderly_percent=w.elderly_percent, outdoor_worker_density=w.outdoor_worker_density,
-                demographic_multiplier=risk["demographic_multiplier"],
-                breakdown=json.dumps({"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
-                           "source": "celery-compute-risk"}),
-            ))
-            n += 1
-        await session.commit()
-    await engine.dispose()
-    return {"status": "risk scores computed", "wards": n}
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as session:
+            wards = (await session.execute(select(Ward))).scalars().all()
+            # Admin-panel thresholds override the model's default HI/WBGT cutoffs.
+            cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
+            thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
+            n = 0
+            for w in wards:
+                wr = (await session.execute(
+                    select(WeatherReading).where(WeatherReading.ward_code == w.ward_code)
+                    .order_by(desc(WeatherReading.recorded_at)).limit(1))).scalar_one_or_none()
+                if not wr:
+                    continue
+                # 0.0 is a real reading, not a missing one — only fall back on None.
+                heat_index = wr.heat_index if wr.heat_index is not None else 35.0
+                wbgt = wr.wbgt if wr.wbgt is not None else 28.0
+                elderly = w.elderly_percent if w.elderly_percent is not None else 8.57
+                workers = w.outdoor_worker_density if w.outdoor_worker_density is not None else 0.5
+                risk = MortalityRiskService.calculate_risk(
+                    heat_index=heat_index, wbgt=wbgt,
+                    elderly_percent=elderly,
+                    outdoor_worker_density=workers,
+                    temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
+                    total_population=w.total_population,
+                    thresholds=thresholds,
+                )
+                session.add(RiskScore(
+                    ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),
+                    final_score=risk["final_score"], heat_index=wr.heat_index, wbgt=wr.wbgt,
+                    elderly_percent=w.elderly_percent, outdoor_worker_density=w.outdoor_worker_density,
+                    demographic_multiplier=risk["demographic_multiplier"],
+                    breakdown=json.dumps({"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
+                               "source": "celery-compute-risk"}),
+                ))
+                n += 1
+            await session.commit()
+        return {"status": "risk scores computed", "wards": n}
+    finally:
+        await engine.dispose()
 
 
 async def _trigger_async():
     engine = _engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    async with AsyncSessionLocal() as session:
-        advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
-        # Latest risk row per ward (query returns newest-first).
-        risks = (await session.execute(select(RiskScore).order_by(desc(RiskScore.created_at)))).scalars().all()
-        latest_by_ward = {}
-        for r in risks:
-            latest_by_ward.setdefault(r.ward_code, r)
-        # Dedupe on (ward_code, risk_category) so re-runs don't spam the log.
-        existing = (await session.execute(select(Alert))).scalars().all()
-        already = {(a.ward_code, a.triggered_by) for a in existing}
-        created = 0
-        for r in latest_by_ward.values():
-            if r.risk_category not in ("HIGH", "SEVERE"):
-                continue
-            if (r.ward_code, r.risk_category) in already:
-                continue
-            tmpl = advisories.get(r.risk_category)
-            msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
-            session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
-                              triggered_by=r.risk_category, alert_status="sandbox",
-                              external_id=f"celery_{r.ward_code}_{r.risk_category}"))
-            created += 1
-        await session.commit()
-    await engine.dispose()
-    return {"status": "alerts triggered", "created": created}
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        now = utcnow()
+        cooldown = int(settings.ALERT_COOLDOWN_HOURS)
+        async with AsyncSessionLocal() as session:
+            advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
+            risks = (await session.execute(latest_risk_per_ward())).scalars().all()
+            existing = (await session.execute(select(Alert))).scalars().all()
+            last_alert_at: dict = {}
+            for a in existing:
+                key = (a.ward_code, a.triggered_by)
+                if a.sent_at and (key not in last_alert_at or a.sent_at > last_alert_at[key]):
+                    last_alert_at[key] = a.sent_at
+            created = 0
+            for r in risks:
+                if r.risk_category not in ALERT_CATEGORIES:
+                    continue
+                # A ward that re-escalates after the cooldown gets a fresh alert;
+                # one stuck at HIGH re-alerts each time the cooldown lapses.
+                if not should_alert(last_alert_at.get((r.ward_code, r.risk_category)), now, cooldown):
+                    continue
+                external_id = external_id_for("celery", r.ward_code, r.risk_category, now, cooldown * 3600)
+                if (await session.execute(
+                    select(Alert).where(Alert.external_id == external_id)
+                )).scalars().first():
+                    continue
+                tmpl = advisories.get(r.risk_category)
+                msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
+                session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
+                                  triggered_by=r.risk_category, alert_status="sandbox",
+                                  external_id=external_id))
+                created += 1
+            await session.commit()
+        return {"status": "alerts triggered", "created": created}
+    finally:
+        await engine.dispose()
 
 
 @celery_app.task(name="tasks.weather_tasks.refresh")

@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from app.core.config import settings
 from app.db.session import get_db
 from app.models import Alert, Ward
 from app.schemas import AlertTriggerRequest, AlertResponse, AlertLogResponse
+from app.services.alerting import (
+    DEFAULT_MANUAL_WINDOW_SECONDS,
+    VALID_CATEGORIES,
+    external_id_for,
+    utcnow,
+)
 
 router = APIRouter()
-
-VALID_CATEGORIES = {"LOW", "MODERATE", "HIGH", "SEVERE"}
 
 @router.post("/trigger", response_model=AlertResponse)
 async def trigger(request: AlertTriggerRequest, db: AsyncSession = Depends(get_db)):
@@ -18,11 +23,12 @@ async def trigger(request: AlertTriggerRequest, db: AsyncSession = Depends(get_d
     ward = (await db.execute(select(Ward).where(Ward.ward_code == ward_code))).scalar_one_or_none()
     if not ward:
         raise HTTPException(status_code=404, detail=f"Ward not found: {ward_code}")
-    external_id = f"demo_{ward_code}_{category}"
-    # Idempotent: a repeat trigger for the same ward+category returns the
-    # existing alert instead of stacking duplicates in the log.
+    # Collapse only accidental double-sends inside a short window; a genuine
+    # later re-alert gets its own row instead of replaying a stale one.
+    window = int(settings.MANUAL_ALERT_WINDOW_SECONDS or DEFAULT_MANUAL_WINDOW_SECONDS)
+    external_id = external_id_for("demo", ward_code, category, utcnow(), window)
     existing = (await db.execute(
-        select(Alert).where(Alert.external_id == external_id).order_by(Alert.id.desc())
+        select(Alert).where(Alert.external_id == external_id)
     )).scalars().first()
     if existing:
         return AlertResponse.model_validate(existing)

@@ -28,6 +28,7 @@ import { defaultThresholds, defaultAdvisoryTemplates } from "../data/adminDefaul
 
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== "false";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const RISK_CACHE_TTL_MS = 60_000;
 const riskRequestCache = new Map();
 let advisoryCache = null;
 
@@ -54,6 +55,21 @@ export function normalizeRiskCategory(value) {
   if (t === "high") return "High";
   if (t === "severe") return "Severe";
   return "Moderate";
+}
+
+/**
+ * Parse a backend timestamp for display. The API emits ISO-8601 with an
+ * explicit UTC offset, but a value with no offset at all would be read by
+ * the browser as *local* time and render hours early — so treat an
+ * offset-less string as UTC before formatting.
+ */
+export function formatTimestamp(value) {
+  if (!value) return "";
+  const raw = String(value);
+  const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/.test(raw);
+  const date = new Date(hasOffset ? raw : `${raw}Z`);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleString();
 }
 
 // ---------------------------------------------------------------------------
@@ -101,18 +117,25 @@ export async function fetchWard(wardCode) {
  * GET /api/risk/wards/{code} — HI/WBGT/risk score + advisory text.
  * Normalized to { wardId, riskCategory, heatIndexC, wbgtC, riskScore,
  * advisory, breakdown } whatever the backend's exact key casing is.
+ *
+ * Results are cached briefly to collapse the duplicate requests a burst of
+ * selection changes causes, but the cache expires: scores are recomputed on
+ * the backend every few hours and a permanent cache would pin the panel to
+ * whatever was fetched first.
  */
 export async function fetchWardRisk(wardId) {
-  if (riskRequestCache.has(wardId)) {
-    return riskRequestCache.get(wardId);
+  const cached = riskRequestCache.get(wardId);
+  if (cached && Date.now() - cached.at < RISK_CACHE_TTL_MS) {
+    return cached.promise;
   }
+  if (cached) riskRequestCache.delete(wardId);
 
   const request = fetchWardRiskUncached(wardId).catch((error) => {
     // A failed request must not poison the cache; retry should be a real retry.
     riskRequestCache.delete(wardId);
     throw error;
   });
-  riskRequestCache.set(wardId, request);
+  riskRequestCache.set(wardId, { at: Date.now(), promise: request });
   return request;
 }
 

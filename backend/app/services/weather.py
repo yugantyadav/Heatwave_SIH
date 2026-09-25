@@ -68,19 +68,28 @@ def daily_heat_index_forecast(forecast_path: str) -> list:
     return daily_heat_index_from_hourly(fc.get("hourly", {}))
 
 
-def forecast_file_is_fresh(forecast_path: str) -> bool:
-    """True when the bundled forecast file still extends into the future
-    (i.e. it was written recently enough to cover today)."""
+def forecast_file_is_fresh(forecast_path: str, horizon_days: int = 5) -> bool:
+    """True when the bundled forecast still covers a full outlook from today.
+
+    Testing only the LAST hourly slot is not enough: the file spans several
+    days, so a file generated days ago keeps a future last slot and would
+    report "fresh" long after its earliest days lapsed — the chart would then
+    quietly render a truncated outlook instead of going live. Require the
+    file to start no later than today *and* still reach the full horizon.
+    """
     import json
-    from datetime import datetime
+    from datetime import date, timedelta
 
     try:
         with open(forecast_path) as f:
             fc = json.load(f)
-        times = fc.get("hourly", {}).get("time", [])
-        if not times:
+        days = sorted({str(ts)[:10] for ts in fc.get("hourly", {}).get("time", []) if ts})
+        if not days:
             return False
-        last = datetime.fromisoformat(str(times[-1]))
-        return last >= datetime.now()
+        today = date.today().isoformat()
+        if days[0] > today:
+            return False  # forecast starts in the future — nothing for today
+        needed_last = (date.today() + timedelta(days=horizon_days - 1)).isoformat()
+        return days[-1] >= needed_last
     except Exception:
         return False
