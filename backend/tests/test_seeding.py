@@ -133,9 +133,9 @@ def test_severe_threshold_is_seeded_blank_not_zero():
             if key.endswith("_threshold") and value is not None:
                 assert value > 0
 
-
 @pytest.mark.parametrize("raw,expected", [
-    # Render hands out a sync-driver URL; the async engine needs asyncpg.
+    # A driverless postgresql:// is the sync psycopg2 dialect; the async
+    # engine needs asyncpg.
     ("postgresql://u:p@h:5432/db", "postgresql+asyncpg://u:p@h:5432/db"),
     ("postgres://u:p@h:5432/db", "postgresql+asyncpg://u:p@h:5432/db"),
     ("postgresql+psycopg2://u:p@h/db", "postgresql+asyncpg://u:p@h/db"),
@@ -144,18 +144,3 @@ def test_severe_threshold_is_seeded_blank_not_zero():
 ])
 def test_async_database_url_normalisation(raw, expected):
     assert Settings(DATABASE_URL=raw).ASYNC_DATABASE_URL == expected
-
-
-def test_render_yaml_has_no_paid_services():
-    """Free tier only: no background worker and no Key Value instance."""
-    import pathlib
-
-    yaml = pytest.importorskip("yaml")
-    path = pathlib.Path(__file__).resolve().parents[2] / "render.yaml"
-    blueprint = yaml.safe_load(path.read_text())
-    # Render omits "type" for Postgres and uses it to select other datastores,
-    # so a redis instance here would show up as type == "redis".
-    assert all(db.get("type") != "redis" for db in blueprint["databases"])
-    assert all(s["type"] == "web" for s in blueprint["services"]), "only a web service is free"
-    assert blueprint["databases"][0]["plan"] == "free"
-    assert "healthCheckPath" in blueprint["services"][0]

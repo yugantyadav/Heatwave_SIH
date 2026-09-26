@@ -13,8 +13,8 @@
 #             6-hourly pipeline runs without a fifth container
 #   frontend  OPT-IN (profile: dev) Vite dev server on :5173 for hot reload
 #
-# Nothing here is required for the free Render deploy; that uses only web + db.
-# This file is for a local container, a demo machine, or verifying the image.
+# Nothing else is required to run this project — the stack above is the whole
+# deployment story.
 #
 # IMPORTANT: web and worker are built from the same image but are separate
 # containers. `docker compose build frontend` or `up web` alone does NOT

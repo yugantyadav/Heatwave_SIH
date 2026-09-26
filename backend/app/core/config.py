@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     def ASYNC_DATABASE_URL(self) -> str:
         """DATABASE_URL forced onto an async driver.
 
-        Render hands out ``postgresql://user:pass@host/db`` for a Postgres
-        instance. SQLAlchemy reads that as the *sync* psycopg2 dialect, so
-        ``create_async_engine`` refuses it ('The asyncio extension requires
-        an async driver'). Rewriting the driver is what makes the documented
-        deploy config actually work.
+        A plain ``postgresql://user:pass@host/db`` is read by SQLAlchemy as the
+        *sync* psycopg2 dialect, and ``create_async_engine`` rejects it ('The
+        asyncio extension requires an async driver'). Rewriting the driver lets
+        the same connection string work in docker-compose and anywhere else
+        that hands out a driverless URL.
         """
         url = self.DATABASE_URL
         for prefix in ("postgresql+psycopg2://", "postgres+psycopg2://",

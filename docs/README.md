@@ -212,50 +212,54 @@ python seed_wards.py
 python ingest_weather.py
 ```
 
-## Railway Deployment
+## Running with Docker
 
-Deploy the full stack on Railway (free tier, $5/month credit).
-
-### Steps
+Docker Compose is how this project runs. One image serves both the FastAPI API
+and the built dashboard, so a single container publishes the UI and the API on
+the same origin.
 
 ```bash
-# 1. Install Railway CLI
-npm install -g @railway/cli
+# Full stack (Postgres, Redis, API + dashboard, Celery worker/beat)
+docker compose up -d --build
 
-# 2. Login
-railway login
-
-# 3. Init project
-railway init
-
-# 4. Add services
-railway add postgresql
-railway add redis
-
-# 5. Set environment variables
-railway variables set DATABASE_URL="postgresql+asyncpg://postgres:postgres@postgresql:5432/heatwave"
-railway variables set REDIS_URL="redis://redis:6379/0"
-railway variables set ENVIRONMENT="production"
-
-# 6. Deploy
-railway up --build
-
-# 7. Deploy worker and beat
-railway up --build --service worker
-railway up --build --service beat
+# Add the hot-reloading frontend for frontend work
+docker compose --profile dev up -d --build
 ```
 
-### Railway Configuration
-- **`railway.toml`**: Service definitions for postgresql and redis
-- **`Procfile`**: Process types (web, worker, beat)
-- **`Dockerfile`**: Backend Docker image
-- **`docker-compose.yml`**: Local development with all services
-- **`Dockerfile`** (frontend): React frontend image
+| URL | What it is |
+|-----|------------|
+| http://localhost:8000 | Production build — the API serves the compiled dashboard |
+| http://localhost:5173 | Dev server with hot reload, `/api` proxied to the API |
 
-### Local Development with Docker Compose
 ```bash
-docker-compose up --build
+docker compose ps          # status
+docker compose logs -f web # follow the API
+docker compose down        # stop
+docker compose down -v     # stop and delete the database
 ```
+
+The database starts empty and seeds itself on boot (wards, thresholds,
+advisory templates), then fetches live weather and computes ward risk. The
+first request after a fresh start takes 30-60s while that happens.
+
+> After changing backend code or dependencies, always run
+> `docker compose up -d --build`. Targeting a single service (`up web`)
+> recreates only that container and leaves the rest on the old image.
+
+### Containers
+- **`Dockerfile`**: multi-stage — builds the Vite bundle, then serves it from FastAPI
+- **`docker-compose.yml`**: db, redis, web, worker
+- **`frontend/Dockerfile.dev`**: Vite dev server for the `dev` profile
+- **`.dockerignore`**: keeps local `.env` files out of the image
+
+### Environment Variables
+- `DATABASE_URL`: `postgresql://user:pass@host:5432/db` (rewritten to `+asyncpg` automatically)
+- `REDIS_URL`: Redis connection string for the Celery broker
+- `ENVIRONMENT`: `development` or `production`
+- `FORECAST_REFRESH_HOURS`: how often to refresh forecasts (default 6)
+- `ALERT_COOLDOWN_HOURS`: minimum gap between alerts for the same ward
+- `DATA_MAX_AGE_MINUTES`: staleness threshold for the read-path refresh
+- `TWILIO_*`, `WHATSAPP_*`: optional; alerts are sandboxed without them
 
 ### Environment Variables Required
 - `DATABASE_URL`: PostgreSQL + asyncpg connection string

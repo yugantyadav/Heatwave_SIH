@@ -1,15 +1,15 @@
 """Idempotent database seeding.
 
-Why this exists: the app is deployed to a *fresh* Render Postgres where
-``Base.metadata.create_all`` builds the tables but leaves them empty. That
-produced a dashboard where every endpoint returned 200 and the map rendered
-zero wards — a healthy-looking service showing nothing. It also happens
-whenever the free Postgres expires and is recreated.
+Why this exists: on a fresh database — a new ``docker compose up``, or the
+``db`` volume deleted — ``Base.metadata.create_all`` builds the tables but
+leaves them empty. That produced a dashboard where every endpoint returned
+200 and the map rendered zero wards: a healthy-looking service showing
+nothing.
 
 ``ensure_seeded`` runs at the top of the pipeline and fills in anything
-missing, so a cold deploy is self-healing. It only ever inserts what is
+missing, so a cold start is self-healing. It only ever inserts what is
 absent: existing wards, thresholds and advisories are never overwritten, so
-admin edits survive restarts and redeploys.
+admin edits survive restarts.
 """
 import csv
 import json

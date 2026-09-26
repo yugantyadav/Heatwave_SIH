@@ -28,9 +28,6 @@ postgres/
 # Docker
 .dockerinit
 
-# Railway
-railway.toml
-
 # Python cache
 __pycache__/
 *.pyc

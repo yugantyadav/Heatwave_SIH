@@ -14,9 +14,10 @@ from app.services.alerting import utcnow
 
 router = APIRouter()
 
-# Staleness self-heal. On Render's free tier nothing runs on a schedule, so
-# the read path notices stale data and kicks the pipeline. The flag keeps a
-# burst of requests from starting several pipelines at once.
+# Staleness self-heal. The Celery worker runs the pipeline on a schedule, but
+# if it is down the API would otherwise serve arbitrarily old data, so the
+# first read after the data ages out kicks the pipeline itself. The flag keeps
+# a burst of requests from starting several pipelines at once.
 _refresh_lock = asyncio.Lock()
 _refresh_in_flight = False
 
