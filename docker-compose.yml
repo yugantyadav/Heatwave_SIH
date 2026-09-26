@@ -1,61 +1,94 @@
-version: "3.8"
+# Heatwave EWS — full stack in one command:
+#     docker compose up --build      -> http://localhost:8000
+#
+# Mirrors what Render runs: the same multi-stage image serves BOTH the FastAPI
+# app and the built frontend, so there is no separate frontend container.
+#
+#   db      Postgres (plain — ward polygons are stored as GeoJSON text, so
+#           PostGIS is not needed)
+#   redis   broker for the Celery worker
+#   web     uvicorn + the compiled SPA, ports the UI and the API on :8000
+#   worker  celery worker with the beat scheduler embedded (--beat), so the
+#           6-hourly pipeline runs without a fifth container
+#
+# Nothing here is required for the free Render deploy; that uses only web + db.
+# This file is for a local container, a demo machine, or verifying the image.
+
+name: heatwave
+
+x-app-env: &app-env
+  # Plain postgresql:// — Settings.ASYNC_DATABASE_URL rewrites it to +asyncpg,
+  # which is what the async engine needs.
+  DATABASE_URL: postgresql://heatwave:heatwave@db:5432/heatwave
+  REDIS_URL: redis://redis:6379/0
+  ENVIRONMENT: production
+  FORECAST_REFRESH_HOURS: "6"
+  ALERT_COOLDOWN_HOURS: "6"
+  DATA_MAX_AGE_MINUTES: "30"
 
 services:
-  backend:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgresql:5432/heatwave
-      - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=production
-    depends_on:
-      - postgresql
-      - redis
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-  worker:
-    build: .
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgresql:5432/heatwave
-      - REDIS_URL=redis://redis:6379/0
-    command: celery -A app.tasks.celery_app worker --loglevel=info
-    depends_on:
-      - backend
-      - redis
-
-  beat:
-    build: .
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgresql:5432/heatwave
-      - REDIS_URL=redis://redis:6379/0
-    command: celery -A app.tasks.celery_app beat --loglevel=info
-    depends_on:
-      - backend
-      - redis
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-
-  postgresql:
-    image: postgis/postgis:16-3.4
+  db:
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: heatwave
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: heatwave
+      POSTGRES_PASSWORD: heatwave
+    # No published port on purpose: web and worker reach it over the compose
+    # network, and it avoids colliding with a Postgres you already run locally.
+    # For a shell: docker compose exec db psql -U heatwave -d heatwave
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heatwave -d heatwave"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *app-env
     ports:
-      - "6379:6379"
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # No curl in python:3.12-slim, so health-check with the interpreter.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *app-env
+    # --beat embeds the scheduler in the worker, so refresh/compute/alert still
+    # run on a 6-hourly cadence in this stack.
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--beat", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  db_data:

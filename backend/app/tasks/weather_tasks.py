@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
+from app.core.paths import forecast_path
 from app.db.session import Base, AsyncSessionLocal
 from app.db.queries import latest_alert_per_ward_category, latest_risk_per_ward
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
@@ -65,8 +66,8 @@ async def _refresh_async():
         "timezone": "Asia/Kolkata",
         "forecast_days": 5,
     }
-    fc_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "mumbai_weather_forecast.json"))
-    # The data/ dir is absent in a fresh image unless the image copies it, so
+    fc_path = str(forecast_path())
+    # The data dir is absent in a fresh image unless the image copies it, so
     # never assume it is there.
     os.makedirs(os.path.dirname(fc_path), exist_ok=True)
     try:

@@ -13,16 +13,16 @@ admin edits survive restarts and redeploys.
 """
 import csv
 import json
-from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.paths import data_dir
 from app.models import AdvisoryTemplate, ThresholdConfig, Ward
 
-# backend/app/services -> repo root
-REPO_ROOT = Path(__file__).resolve().parents[3]
-DATA_DIR = REPO_ROOT / "data"
+# Resolved by searching for the files, so it works both in the repo and in the
+# flattened container image (see app/core/paths.py for why that matters).
+DATA_DIR = data_dir()
 CENSUS_CSV = DATA_DIR / "mumbai_ward_census.csv"
 AREAS_GEOJSON = DATA_DIR / "wards_geojson.json"
 

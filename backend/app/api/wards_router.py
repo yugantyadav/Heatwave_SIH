@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 from app.core.config import settings
+from app.core.paths import geojson_path
 from app.db.queries import latest_risk_per_ward
 from app.db.session import AsyncSessionLocal, get_db
 from app.models import Ward, WeatherReading
@@ -75,7 +76,6 @@ async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
     the Census CSV) enriched with live riskCategory from the latest RiskScore.
     Falls back to DB-only properties when the file is missing."""
     import json
-    import os
 
     # With no background worker there is nothing to refresh on a schedule, so
     # the first read after the data goes stale triggers the pipeline inline.
@@ -88,10 +88,10 @@ async def get_wards_geojson(db: AsyncSession = Depends(get_db)):
     risk_result = await db.execute(latest_risk_per_ward())
     latest_by_ward = {r.ward_code: r.risk_category for r in risk_result.scalars().all()}
 
-    geo_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "wards_geojson.json")
     geom_by_code = {}
+    geo_path = geojson_path()
     try:
-        with open(os.path.normpath(geo_path)) as f:
+        with open(geo_path) as f:
             fc = json.load(f)
         for feat in fc.get("features", []):
             code = str(feat.get("properties", {}).get("ward_code"))

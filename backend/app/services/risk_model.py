@@ -2,18 +2,25 @@
 # Prototype mortality-weighted scorer. Optionally blends the Isolation Forest
 # anomaly score from ml/models/isolation_forest.joblib (loaded by
 # ml/risk_model.py) when the ml package is importable.
+#
+# The ml path is resolved by search, not by a fixed "../../..": in the
+# container image the backend is flattened to /app, so the old relative path
+# resolved to /ml, the import silently failed, and every score was computed
+# with the anomaly blend switched off.
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "ml"))
+from app.core.paths import ml_dir
+
+ML_DIR = str(ml_dir())
+if ML_DIR not in sys.path:
+    sys.path.insert(0, ML_DIR)
 
 try:
     from risk_model import detect_heat_anomaly as _ml_anomaly
 
     _HAVE_ML_ANOMALY = True
-    _MODEL_PATH = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "ml", "models", "isolation_forest.joblib"
-    )
+    _MODEL_PATH = os.path.join(ML_DIR, "models", "isolation_forest.joblib")
 except Exception:
     _HAVE_ML_ANOMALY = False
     _MODEL_PATH = None
