@@ -1,0 +1,21 @@
+# Dev-only image: the Vite dev server with hot reload.
+#
+# The production Dockerfile builds a static bundle that the API serves; this
+# one is for editing frontend code without rebuilding the Python image.
+#
+#   docker compose --profile dev up
+#
+# node_modules lives in a named volume (see docker-compose.yml) so the
+# image's Linux install is used rather than whatever is on the host.
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

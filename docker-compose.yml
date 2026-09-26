@@ -1,18 +1,28 @@
 # Heatwave EWS — full stack in one command:
-#     docker compose up --build      -> http://localhost:8000
+#     docker compose up --build        -> http://localhost:8000
+#     docker compose --profile dev up  -> also http://localhost:5173 (hot reload)
 #
-# Mirrors what Render runs: the same multi-stage image serves BOTH the FastAPI
-# app and the built frontend, so there is no separate frontend container.
+# Default stack: the same multi-stage image serves BOTH the FastAPI app and the
+# built frontend, so there is no separate frontend container.
 #
-#   db      Postgres (plain — ward polygons are stored as GeoJSON text, so
-#           PostGIS is not needed)
-#   redis   broker for the Celery worker
-#   web     uvicorn + the compiled SPA, ports the UI and the API on :8000
-#   worker  celery worker with the beat scheduler embedded (--beat), so the
-#           6-hourly pipeline runs without a fifth container
+#   db        Postgres (plain — ward polygons are stored as GeoJSON text, so
+#             PostGIS is not needed)
+#   redis     broker for the Celery worker
+#   web       uvicorn + the compiled SPA, ports the UI and the API on :8000
+#   worker    celery worker with the beat scheduler embedded (--beat), so the
+#             6-hourly pipeline runs without a fifth container
+#   frontend  OPT-IN (profile: dev) Vite dev server on :5173 for hot reload
 #
 # Nothing here is required for the free Render deploy; that uses only web + db.
 # This file is for a local container, a demo machine, or verifying the image.
+#
+# IMPORTANT: web and worker are built from the same image but are separate
+# containers. `docker compose build frontend` or `up web` alone does NOT
+# recreate the other one, so they can end up running different code. When you
+# change backend code or dependencies, always recreate everything:
+#     docker compose up -d --build
+# A stale worker once scored every ward from a NULL heat index while web looked
+# healthy, so treat "recreate all" as the default, not the exception.
 
 name: heatwave
 
@@ -90,5 +100,33 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Optional: hot-reloading frontend. Off by default because `web` already
+  # serves the compiled SPA on :8000.
+  #     docker compose --profile dev up
+  # ---------------------------------------------------------------------------
+  frontend:
+    profiles: ["dev"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      # Same-origin: the Vite dev server proxies /api to the web container, so
+      # the browser never does a cross-origin call and CORS stays out of it.
+      VITE_API_BASE_URL: ""
+      VITE_USE_MOCK_DATA: "false"
+      VITE_PROXY_TARGET: "http://web:8000"
+    ports:
+      - "5173:5173"
+    volumes:
+      # Source is mounted for hot reload; node_modules is a named volume so the
+      # image's Linux install is used instead of a macOS one from the host.
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   db_data:
+  frontend_node_modules:

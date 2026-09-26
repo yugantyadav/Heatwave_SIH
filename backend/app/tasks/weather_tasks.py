@@ -135,15 +135,22 @@ async def _compute_async():
             cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
             thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
             n = 0
+            skipped_no_thermal = 0
             for w in wards:
                 wr = (await session.execute(
                     select(WeatherReading).where(WeatherReading.ward_code == w.ward_code)
                     .order_by(desc(WeatherReading.recorded_at)).limit(1))).scalar_one_or_none()
                 if not wr:
                     continue
-                # 0.0 is a real reading, not a missing one — only fall back on None.
-                heat_index = wr.heat_index if wr.heat_index is not None else 35.0
-                wbgt = wr.wbgt if wr.wbgt is not None else 28.0
+                # A reading with no HI/WBGT means the thermal service failed.
+                # Substituting a constant here previously scored every ward from
+                # invented data while still reporting success — skip and report
+                # instead, so the pipeline output shows the shortfall.
+                if wr.heat_index is None or wr.wbgt is None:
+                    skipped_no_thermal += 1
+                    continue
+                heat_index = wr.heat_index
+                wbgt = wr.wbgt
                 elderly = w.elderly_percent if w.elderly_percent is not None else 8.57
                 workers = w.outdoor_worker_density if w.outdoor_worker_density is not None else 0.5
                 risk = MortalityRiskService.calculate_risk(
@@ -164,7 +171,12 @@ async def _compute_async():
                 ))
                 n += 1
             await session.commit()
-        return {"status": "risk scores computed", "wards": n}
+        result = {"status": "risk scores computed", "wards": n}
+        if skipped_no_thermal:
+            # Surfaced so a thermal-service outage is visible in logs instead of
+            # looking like a successful run.
+            result["skipped_missing_thermal"] = skipped_no_thermal
+        return result
     finally:
         await engine.dispose()
 
