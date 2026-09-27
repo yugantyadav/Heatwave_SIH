@@ -1,6 +1,6 @@
 # Mumbai Heatwave Early Warning — Frontend (R4)
 
-React (Vite) + Leaflet + Recharts dashboard for Problem Statement 26083.
+React (Vite) + Leaflet + Recharts dashboard for the ward-level heat risk map.
 This is the R4 "Frontend Engineer" Day-9 deliverable: a live map, ward
 popups, a forecast chart, and an admin panel — all built against mock
 data so it runs today, with clearly marked seams for R3's real API.

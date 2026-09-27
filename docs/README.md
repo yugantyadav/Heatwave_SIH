@@ -1,10 +1,9 @@
 # Documentation
 
-Project documentation for the Heatwave Early Warning System hackathon submission.
+Project documentation for the Heatwave Early Warning System.
 
 ## Project Overview
 
-- **Problem Statement**: 26083
 - **Timeline**: 14 days (2 weeks)
 - **Demo city**: Mumbai (5 demo wards: 1, 2, 3, 4, 5)
 - **Team**: 6 roles (R1-R6)
@@ -31,7 +30,7 @@ Project documentation for the Heatwave Early Warning System hackathon submission
 ### Days 12-13: Integration Testing & Polish (All)
 ### Day 14: Final Demo Prep (All)
 
-## Judge Q&A Readiness
+## Q&A Readiness
 
 **"How accurate is your mortality prediction?"**
 → It's a risk-scoring model grounded in published relative-risk coefficients (Ahmedabad Heat Action Plan studies, Gasparrini et al. 2015 Lancet), not a Mumbai-specific trained model, since ward-level mortality data isn't publicly available at that granularity.
@@ -106,7 +105,7 @@ Project documentation for the Heatwave Early Warning System hackathon submission
 #### Slide Content (for presentation)
 - Left column: "Real Data" — ward shapes (OSM/MCGM), elderly % (Census 2011), risk coefficients (Gasparrini/Ahmedabad HAP), weather forecasts (Open-Meteo)
 - Right column: "Modeled/Simulated" — risk scores, forecast values, alert dispatch, heat index/WBGT at ward centroids
-- Label: "This is a hackathon prototype, not a production system"
+- Label: "This is a prototype, not a production system"
 
 #### README Section (project documentation)
 - See "Data Sources" above for complete real data listing

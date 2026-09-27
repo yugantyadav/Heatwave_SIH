@@ -85,7 +85,7 @@ export default function HeatMap({ wards, onWardSelect, selectedWardId }) {
 
   return (
     <MapContainer center={MUMBAI_CENTER} zoom={INITIAL_ZOOM} className="heat-map">
-      {/* Free base map tiles — no API key needed, fine for a hackathon demo. */}
+      {/* Free base map tiles — no API key needed. */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

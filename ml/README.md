@@ -768,7 +768,7 @@ Documentation                   DONE
 22. IMPORTANT LIMITATIONS
 ============================================================
 
-This system is a hackathon prototype.
+This system is a prototype.
 
 The following should not be claimed:
 

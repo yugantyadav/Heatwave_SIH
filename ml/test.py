@@ -16,7 +16,7 @@ This validates three things, in order:
    prediction end-to-end using the real trained model file.
 
 This is a lightweight smoke-test script, not a pytest suite, so it
-can be run with zero extra dependencies during a hackathon demo.
+can be run with zero extra dependencies.
 """
 
 import sys
