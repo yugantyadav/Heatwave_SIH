@@ -9,15 +9,16 @@ Uses synchronous SQLite (Celery worker process), no async engine needed.
 import asyncio
 import json
 import os
+from contextlib import asynccontextmanager
 
 import aiohttp
 from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.core.paths import forecast_path
-from app.db.session import Base, AsyncSessionLocal
+from app.db.session import Base
 from app.db.queries import latest_alert_per_ward_category, latest_risk_per_ward
 from app.models import AdvisoryTemplate, Alert, RiskScore, Ward, WeatherReading, ThresholdConfig
 from app.services.alerting import ALERT_CATEGORIES, external_id_for, should_alert, utcnow
@@ -33,6 +34,30 @@ DB_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "
 
 def _engine():
     return create_async_engine(settings.ASYNC_DATABASE_URL, echo=False)
+
+
+@asynccontextmanager
+async def _session_scope():
+    """A session bound to an engine created *for this task*.
+
+    Celery enters each task through ``asyncio.run``, which opens a brand-new
+    event loop and closes it on return. The shared module-level engine in
+    app/db/session.py keeps a connection pool bound to whichever loop first
+    used it, so the second task in a worker process tries to reuse a
+    connection whose loop is already closed and fails with
+    "attached to a different loop" / "another operation is in progress".
+    Creating the engine per task and disposing it in the finally block keeps
+    each task's pool inside its own loop.
+    """
+    engine = _engine()
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async with maker() as session:
+            yield session
+    finally:
+        await engine.dispose()
 
 
 def _pick_current_hour(hourly: dict) -> int:
@@ -56,7 +81,11 @@ def _pick_current_hour(hourly: dict) -> int:
 
 
 async def _refresh_async():
-    engine = _engine()
+    """Fetch current conditions and the 5-day outlook, store one reading per ward.
+
+    Uses the API's current-conditions field rather than the last element of the
+    hourly array, which is a forecast four days ahead.
+    """
     params = {
         "latitude": MUMBAI_LAT,
         "longitude": MUMBAI_LON,
@@ -67,15 +96,13 @@ async def _refresh_async():
         "forecast_days": 5,
     }
     fc_path = str(forecast_path())
-    # The data dir is absent in a fresh image unless the image copies it, so
-    # never assume it is there.
     os.makedirs(os.path.dirname(fc_path), exist_ok=True)
     try:
         async with aiohttp.ClientSession() as s:
             async with s.get("https://api.open-meteo.com/v1/forecast", params=params, timeout=20) as resp:
                 data = await resp.json()
-        # Persist the fresh forecast so /api/weather/.../forecast never serves
-        # a stale bundled file (atomic write: tmp + replace).
+        # Persist the fresh forecast so /api/weather/.../forecast never serves a
+        # stale bundled file (atomic write: tmp + replace).
         tmp_path = fc_path + ".tmp"
         with open(tmp_path, "w") as f:
             json.dump(data, f)
@@ -104,146 +131,130 @@ async def _refresh_async():
         pr = float(h["precipitation"][idx])
         wc = int(h["weathercode"][idx])
         source = "bundled-fallback"
+
     th = ThermalIndexService.calculate(t, rh)
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        async with AsyncSessionLocal() as session:
-            wards = (await session.execute(select(Ward))).scalars().all()
-            for w in wards:
-                session.add(WeatherReading(
-                    ward_code=w.ward_code, temperature_2m=t,
-                    relative_humidity_2m=rh, precipitation=pr, weathercode=wc,
-                    heat_index=th.get("heat_index"), wbgt=th.get("wbgt"),
-                ))
-            await session.commit()
-            n = len(wards)
-        return {"status": "weather forecast refreshed", "wards": n, "source": source,
-                "temperature_2m": t, "heat_index": th.get("heat_index"), "wbgt": th.get("wbgt")}
-    finally:
-        await engine.dispose()
+    async with _session_scope() as session:
+        wards = (await session.execute(select(Ward))).scalars().all()
+        for w in wards:
+            session.add(WeatherReading(
+                ward_code=w.ward_code, temperature_2m=t,
+                relative_humidity_2m=rh, precipitation=pr, weathercode=wc,
+                heat_index=th.get("heat_index"), wbgt=th.get("wbgt"),
+            ))
+        await session.commit()
+        n = len(wards)
+    return {"status": "weather forecast refreshed", "wards": n, "source": source,
+            "temperature_2m": t, "heat_index": th.get("heat_index"), "wbgt": th.get("wbgt")}
 
 
 async def _compute_async():
-    engine = _engine()
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        async with AsyncSessionLocal() as session:
-            wards = (await session.execute(select(Ward))).scalars().all()
-            # Admin-panel thresholds override the model's default HI/WBGT cutoffs.
-            cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
-            thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
-            n = 0
-            skipped_no_thermal = 0
-            for w in wards:
-                wr = (await session.execute(
-                    select(WeatherReading).where(WeatherReading.ward_code == w.ward_code)
-                    .order_by(desc(WeatherReading.recorded_at)).limit(1))).scalar_one_or_none()
-                if not wr:
-                    continue
-                # A reading with no HI/WBGT means the thermal service failed.
-                # Substituting a constant here previously scored every ward from
-                # invented data while still reporting success — skip and report
-                # instead, so the pipeline output shows the shortfall.
-                if wr.heat_index is None or wr.wbgt is None:
-                    skipped_no_thermal += 1
-                    continue
-                heat_index = wr.heat_index
-                wbgt = wr.wbgt
-                elderly = w.elderly_percent if w.elderly_percent is not None else 8.57
-                workers = w.outdoor_worker_density if w.outdoor_worker_density is not None else 0.5
-                risk = MortalityRiskService.calculate_risk(
-                    heat_index=heat_index, wbgt=wbgt,
-                    elderly_percent=elderly,
-                    outdoor_worker_density=workers,
-                    temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
-                    total_population=w.total_population,
-                    thresholds=thresholds,
-                )
-                session.add(RiskScore(
-                    ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),
-                    final_score=risk["final_score"], heat_index=wr.heat_index, wbgt=wr.wbgt,
-                    elderly_percent=w.elderly_percent, outdoor_worker_density=w.outdoor_worker_density,
-                    demographic_multiplier=risk["demographic_multiplier"],
-                    breakdown=json.dumps({"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
-                               "source": "celery-compute-risk"}),
-                ))
-                n += 1
-            await session.commit()
-        result = {"status": "risk scores computed", "wards": n}
-        if skipped_no_thermal:
-            # Surfaced so a thermal-service outage is visible in logs instead of
-            # looking like a successful run.
-            result["skipped_missing_thermal"] = skipped_no_thermal
-        return result
-    finally:
-        await engine.dispose()
+    """Score every ward from its newest reading and the admin thresholds."""
+    async with _session_scope() as session:
+        wards = (await session.execute(select(Ward))).scalars().all()
+        # Admin-panel thresholds override the model's default HI/WBGT cutoffs.
+        cfg_rows = (await session.execute(select(ThresholdConfig))).scalars().all()
+        thresholds = MortalityRiskService.thresholds_from_config(cfg_rows)
+        n = 0
+        skipped_no_thermal = 0
+        for w in wards:
+            wr = (await session.execute(
+                select(WeatherReading).where(WeatherReading.ward_code == w.ward_code)
+                .order_by(desc(WeatherReading.recorded_at)).limit(1))).scalar_one_or_none()
+            if not wr:
+                continue
+            # A reading with no HI/WBGT means the thermal service failed.
+            # Substituting a constant here previously scored every ward from
+            # invented data while still reporting success — skip and report
+            # instead, so the pipeline output shows the shortfall.
+            if wr.heat_index is None or wr.wbgt is None:
+                skipped_no_thermal += 1
+                continue
+            elderly = w.elderly_percent if w.elderly_percent is not None else 8.57
+            workers = w.outdoor_worker_density if w.outdoor_worker_density is not None else 0.5
+            risk = MortalityRiskService.calculate_risk(
+                heat_index=wr.heat_index, wbgt=wr.wbgt,
+                elderly_percent=elderly,
+                outdoor_worker_density=workers,
+                temperature_c=wr.temperature_2m, humidity=wr.relative_humidity_2m,
+                total_population=w.total_population,
+                thresholds=thresholds,
+            )
+            session.add(RiskScore(
+                ward_code=w.ward_code, risk_category=str(risk["risk_category"]).upper(),
+                final_score=risk["final_score"], heat_index=wr.heat_index, wbgt=wr.wbgt,
+                elderly_percent=w.elderly_percent, outdoor_worker_density=w.outdoor_worker_density,
+                demographic_multiplier=risk["demographic_multiplier"],
+                breakdown=json.dumps({"base_risk": risk["base_risk"], "anomaly_score": risk.get("anomaly_score"),
+                           "source": "celery-compute-risk"}),
+            ))
+            n += 1
+        await session.commit()
+    result = {"status": "risk scores computed", "wards": n}
+    if skipped_no_thermal:
+        # Surfaced so a thermal-service outage is visible in logs instead of
+        # looking like a successful run.
+        result["skipped_missing_thermal"] = skipped_no_thermal
+    return result
 
 
 async def _trigger_async():
-    engine = _engine()
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        now = utcnow()
-        cooldown = int(settings.ALERT_COOLDOWN_HOURS)
-        async with AsyncSessionLocal() as session:
-            advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
-            risks = (await session.execute(latest_risk_per_ward())).scalars().all()
-            # Only the newest alert per (ward, category) is needed — the log is
-            # append-only, so reading it whole would grow every hourly run.
-            last_alert_at = {
-                (a.ward_code, a.triggered_by): a.sent_at
-                for a in (await session.execute(latest_alert_per_ward_category())).scalars().all()
-                if a.sent_at
-            }
-            created = 0
-            for r in risks:
-                if r.risk_category not in ALERT_CATEGORIES:
-                    continue
-                # A ward that re-escalates after the cooldown gets a fresh alert;
-                # one stuck at HIGH re-alerts each time the cooldown lapses.
-                if not should_alert(last_alert_at.get((r.ward_code, r.risk_category)), now, cooldown):
-                    continue
-                external_id = external_id_for("celery", r.ward_code, r.risk_category, now, cooldown * 3600)
-                if (await session.execute(
-                    select(Alert).where(Alert.external_id == external_id)
-                )).scalars().first():
-                    continue
-                tmpl = advisories.get(r.risk_category)
-                msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
-                # external_id is UNIQUE, so a concurrent worker can still win the
-                # race between the check above and this insert. Each insert gets
-                # its own SAVEPOINT so losing that race costs one alert instead
-                # of aborting every alert queued in this run.
-                try:
-                    async with session.begin_nested():
-                        session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
-                                          triggered_by=r.risk_category, alert_status="sandbox",
-                                          external_id=external_id))
-                        await session.flush()
-                except IntegrityError:
-                    continue
-                created += 1
-            await session.commit()
-        return {"status": "alerts triggered", "created": created}
-    finally:
-        await engine.dispose()
+    """Raise an alert for every ward currently at HIGH or SEVERE."""
+    now = utcnow()
+    cooldown = int(settings.ALERT_COOLDOWN_HOURS)
+    async with _session_scope() as session:
+        advisories = {a.risk_category: a for a in (await session.execute(select(AdvisoryTemplate))).scalars().all()}
+        risks = (await session.execute(latest_risk_per_ward())).scalars().all()
+        # Only the newest alert per (ward, category) is needed — the log is
+        # append-only, so reading it whole would grow every hourly run.
+        last_alert_at = {
+            (a.ward_code, a.triggered_by): a.sent_at
+            for a in (await session.execute(latest_alert_per_ward_category())).scalars().all()
+            if a.sent_at
+        }
+        created = 0
+        for r in risks:
+            if r.risk_category not in ALERT_CATEGORIES:
+                continue
+            # A ward that re-escalates after the cooldown gets a fresh alert;
+            # one stuck at HIGH re-alerts each time the cooldown lapses.
+            if not should_alert(last_alert_at.get((r.ward_code, r.risk_category)), now, cooldown):
+                continue
+            external_id = external_id_for("celery", r.ward_code, r.risk_category, now, cooldown * 3600)
+            if (await session.execute(
+                select(Alert).where(Alert.external_id == external_id)
+            )).scalars().first():
+                continue
+            tmpl = advisories.get(r.risk_category)
+            msg = (tmpl.sms_text if tmpl else f"{r.risk_category} heat risk in ward {r.ward_code}. Take precautions.")
+            # external_id is UNIQUE, so a concurrent worker can still win the
+            # race between the check above and this insert. Each insert gets
+            # its own SAVEPOINT so losing that race costs one alert instead
+            # of aborting every alert queued in this run.
+            try:
+                async with session.begin_nested():
+                    session.add(Alert(ward_code=r.ward_code, alert_channel="sms", message=msg,
+                                      triggered_by=r.risk_category, alert_status="sandbox",
+                                      external_id=external_id))
+                    await session.flush()
+            except IntegrityError:
+                continue
+            created += 1
+        await session.commit()
+    return {"status": "alerts triggered", "created": created}
+
+
+async def _seed_async():
+    async with _session_scope() as session:
+        return await ensure_seeded(session)
 
 
 async def _pipeline_async():
     """seed -> refresh -> compute -> trigger, in order.
 
-    Seeding comes first because a fresh deployment (or an expired free
-    Postgres) has the tables but no rows: without wards the map renders
-    nothing, and the risk pass would score zero wards.
-
-    refresh/compute/trigger used to be three independent beat entries
-    sharing one period, so they fired at the same instant and compute could
-    read the previous refresh's weather. Running them in sequence guarantees
-    risk is scored from fresh weather and alerts follow the scores they were
-    meant to act on.
+    Scheduling these independently let compute read the previous refresh's
+    weather, so they are run as one sequence. Seeding comes first because a
+    fresh database has the tables but no rows: without wards the map renders
+    nothing and the risk pass would score zero wards.
     """
     results = {}
     for name, step in (
@@ -257,17 +268,6 @@ async def _pipeline_async():
         except Exception as exc:  # one broken step must not starve the others
             results[name] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return results
-
-
-async def _seed_async():
-    engine = _engine()
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        async with AsyncSessionLocal() as session:
-            return await ensure_seeded(session)
-    finally:
-        await engine.dispose()
 
 
 @celery_app.task(name="tasks.weather_tasks.pipeline")
